@@ -19,8 +19,11 @@ fn default_javascript_path() -> String {
 
 #[derive(Debug, Default, Deserialize)]
 struct ModuleConfiguration {
+    #[serde(default = "default_view_path")]
     view: String,
+    #[serde(default = "default_style_path")]
     style: String,
+    #[serde(default = "default_javascript_path")]
     entry: String,
     data: Table,
 }
@@ -34,23 +37,23 @@ pub struct Module {
 
 impl Module {
     pub fn new(base_path: &PathBuf) -> Self {
-        let page: ModuleConfiguration =
+        let module: ModuleConfiguration =
             utils::read_toml_file(&base_path).expect("Toml could not be read");
         let parent = base_path.parent().unwrap_or(Path::new("/"));
         let view = parent
-            .join(&page.view)
+            .join(&module.view)
             .is_file()
-            .then(|| parent.join(&page.view));
+            .then(|| parent.join(&module.view));
 
         let style = parent
-            .join(&page.style)
+            .join(&module.style)
             .is_file()
-            .then(|| parent.join(&page.view));
+            .then(|| parent.join(&module.view));
 
         let entry = parent
-            .join(&page.entry)
+            .join(&module.entry)
             .is_file()
-            .then(|| parent.join(&page.view));
+            .then(|| parent.join(&module.view));
 
         Self { view, style, entry }
     }
