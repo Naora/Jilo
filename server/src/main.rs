@@ -1,5 +1,10 @@
+mod application;
 mod core;
 mod utils;
+
+use std::collections::HashMap;
+
+use crate::core::website::Page;
 
 // use crate::core::Renderer;
 
@@ -24,7 +29,7 @@ mod utils;
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
 
-    let core = core::Core::default();
+    let core = application::Application::default();
 
     // let mut data = tera::Context::new();
     // data.insert("product_name", &"This is a product in index".to_string());
@@ -41,6 +46,20 @@ async fn main() -> std::io::Result<()> {
     // .bind("127.0.0.1:8080")?
     // .run()
     // .await
+
+    let mut data = HashMap::new();
+
+    data.insert("product_name".to_string(), "this is amazing".to_string());
+
+    let page = Page {
+        template: "product",
+        modules: vec![],
+        data,
+    };
+
+    let html = core.generate_page(&page).unwrap();
+
+    log::info!("html is : \n{}", html);
 
     Ok(())
 }
