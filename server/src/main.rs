@@ -1,10 +1,8 @@
-mod application;
 mod core;
-mod utils;
 
 use std::collections::HashMap;
 
-use crate::core::website::Page;
+use crate::core::{website::Page, Application};
 
 // use crate::core::Renderer;
 
@@ -29,7 +27,7 @@ use crate::core::website::Page;
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
 
-    let core = application::Application::default();
+    let core = Application::default();
 
     // let mut data = tera::Context::new();
     // data.insert("product_name", &"This is a product in index".to_string());
@@ -46,20 +44,24 @@ async fn main() -> std::io::Result<()> {
     // .bind("127.0.0.1:8080")?
     // .run()
     // .await
+    log::info!("{:?}", core);
 
-    let mut data = HashMap::new();
+    core.generate_site("../output");
 
-    data.insert("product_name".to_string(), "this is amazing".to_string());
+    // let mut data = HashMap::new();
 
-    let page = Page {
-        template: "product",
-        modules: vec![],
-        data,
-    };
+    // data.insert("product_name".to_string(), "this is amazing".to_string());
 
-    let html = core.generate_page(&page).unwrap();
+    // let page = Page {
+    //     template: "product",
+    //     path: "/",
+    //     modules: vec![],
+    //     data,
+    // };
 
-    log::info!("html is : \n{}", html);
+    // let html = core.generate_page(&page).unwrap();
+
+    // log::info!("html is : \n{}", html);
 
     Ok(())
 }

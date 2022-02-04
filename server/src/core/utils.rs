@@ -11,7 +11,7 @@ pub enum ReadTomlFileError {
 
 pub fn read_toml_file<P, T>(path: P) -> Result<T, ReadTomlFileError>
 where
-    T: for<'a> Deserialize<'a> + Default,
+    T: for<'a> Deserialize<'a>,
     P: AsRef<Path>,
 {
     let content = match fs::read(path) {

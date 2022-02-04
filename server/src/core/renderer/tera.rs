@@ -1,16 +1,13 @@
 use std::{collections::HashMap, path::Path};
 
-use tera::Context;
-
-use super::{
+use crate::core::{
     error::{Error, ErrorKind, Result},
     website::Page,
 };
 
-/// Renderer
-pub trait Renderer {
-    fn render(&self, page: &Page) -> Result<String>;
-}
+use tera::Context;
+
+use super::Renderer;
 
 #[derive(Debug)]
 pub struct TeraRenderer {
@@ -29,13 +26,6 @@ impl TeraRenderer {
         }
 
         TeraRenderer { tera }
-    }
-}
-
-impl Default for TeraRenderer {
-    fn default() -> Self {
-        let tera = tera::Tera::default();
-        Self { tera }
     }
 }
 

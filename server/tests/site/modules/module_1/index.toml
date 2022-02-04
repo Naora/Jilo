@@ -1,0 +1,17 @@
+view = "view.hbs"
+style = "style.scss"
+entry = "index.js"
+
+[[fields]]
+name = "content"
+type = "String"
+
+
+[[fields]]
+name = "class"
+type = "String"
+
+
+[[fields]]
+name = "hide"
+type = "Boolean"

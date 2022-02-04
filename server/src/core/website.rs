@@ -11,6 +11,8 @@ pub struct Page<'a> {
     pub modules: Vec<String>,
 }
 
+pub type Pages<'a> = HashMap<String, Page<'a>>;
+
 #[derive(Debug)]
 pub struct Website {
     pages: HashMap<String, Module>,
@@ -49,11 +51,11 @@ impl Website {
 }
 
 trait ParseModuleForPattern {
-    fn parse_module(&mut self, pattern: &str) -> ();
+    fn parse_module(&mut self, pattern: &str);
 }
 
 impl ParseModuleForPattern for HashMap<String, Module> {
-    fn parse_module(&mut self, pattern: &str) -> () {
+    fn parse_module(&mut self, pattern: &str) {
         for entry in glob::glob(&pattern).expect("Failed to read glob pattern") {
             match entry {
                 Ok(mut path) => {
@@ -68,7 +70,7 @@ impl ParseModuleForPattern for HashMap<String, Module> {
                         }
                     };
                 }
-                _ => (),
+                Err(error) => log::warn!("Glob pattern failed {:?}", error),
             }
         }
     }

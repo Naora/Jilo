@@ -1,0 +1,16 @@
+template = "basic"
+path = "/"
+
+[[modules]]
+name = "header"
+[modules.data]
+content = "Here is the content of header"
+class = "header-class-haha"
+hide = false
+
+[[modules]]
+name = "text"
+[modules.data]
+content = "Here is the content of text"
+class = "header-class-haha"
+hide = false
