@@ -59,7 +59,7 @@ impl Application {
             let html = self.generate_page(&page).unwrap(); // Todo handle Result
             let path = path.to_owned() + ".html";
             let path = dest_path.join(&path);
-            log::info!("{:?}", path);
+
             let mut dest_html_file = fs::File::create(path).unwrap(); // Todo handle Result
             dest_html_file.write_all(html.as_bytes()).unwrap(); // Todo handle Result
         }

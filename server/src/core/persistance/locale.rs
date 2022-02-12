@@ -10,6 +10,12 @@ use super::Persist;
 #[derive(Deserialize, Serialize, Debug)]
 struct DataFile {
     template: String,
+    areas: Vec<AreaData>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct AreaData {
+    name: String,
     modules: Vec<ModuleData>,
 }
 
@@ -65,7 +71,13 @@ impl Persist for Locale {
     fn get_all_pages(&self) -> website::Pages {
         let mut result = HashMap::new();
         for (name, file) in &self.files {
-            let modules = file.modules.iter().map(|m| m.name.to_owned()).collect();
+            let modules = file
+                .areas
+                .iter()
+                .map(|area| &area.modules)
+                .flatten()
+                .map(|m| m.name.to_owned())
+                .collect();
 
             let page = website::Page {
                 template: &file.template,

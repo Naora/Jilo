@@ -28,6 +28,7 @@ struct ModuleFile {
     #[serde(default = "get_default_javascript_path")]
     entry: String,
     fields: Option<Vec<Field>>, // Todo use data to fetch props from modules
+    areas: Option<Vec<Area>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,6 +51,14 @@ pub struct Module {
     pub style: Option<PathBuf>,
     pub entry: Option<PathBuf>,
     pub fields: Vec<Field>,
+    pub areas: Vec<Area>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Area {
+    pub name: String,
+    #[serde(default)]
+    pub modules: Vec<String>,
 }
 
 impl Module {
@@ -79,6 +88,11 @@ impl Module {
             Some(fields) => fields,
             None => vec![],
         };
+
+        self.areas = match module_file.areas {
+            Some(areas) => areas,
+            None => vec![],
+        }
     }
 
     pub fn get_module_name(&self) -> Result<String> {

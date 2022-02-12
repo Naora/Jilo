@@ -1,16 +1,17 @@
 template = "basic"
 path = "/"
 
-[[modules]]
+[[areas]]
 name = "header"
-[modules.data]
+[[areas.modules]]
+name = "modules_1"
+[areas.modules.data]
 content = "Here is the content of header"
 class = "header-class-haha"
 hide = false
-
-[[modules]]
-name = "text"
-[modules.data]
+[[areas.modules]]
+name = "modules_2"
+[areas.modules.data]
 content = "Here is the content of text"
 class = "header-class-haha"
 hide = false

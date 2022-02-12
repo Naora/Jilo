@@ -1,8 +1,0 @@
-view = "view.hbs"
-style = "style.scss"
-entry = "index.js"
-
-[data]
-content = "string"
-class = "string"
-hide = "boolean"
