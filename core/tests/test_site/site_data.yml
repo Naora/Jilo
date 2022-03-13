@@ -1,0 +1,10 @@
+---
+name: "first article"
+page: article
+fields:
+  title: "Hello World"
+---
+name: "second article"
+page: article
+fields:
+  title: "Hello Bernard"

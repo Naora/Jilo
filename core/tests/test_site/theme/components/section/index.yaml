@@ -1,0 +1,4 @@
+---
+view: view.html
+fields:
+  title: string

@@ -1,6 +1,0 @@
-[[fields]]
-name = "product_name"
-type = "String"
-
-[[areas]]
-name = "header"
