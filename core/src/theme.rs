@@ -40,7 +40,7 @@ pub struct Module {
     pub areas: HashMap<String, Area>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum Field {
     String,

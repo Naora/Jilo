@@ -1,4 +1,3 @@
----
 view: view.html
 fields:
   field_1: string

@@ -1,0 +1,4 @@
+name: "first article"
+module: "article"
+fields:
+  title: "Hello World"

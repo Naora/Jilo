@@ -5,43 +5,56 @@ use crate::{
     renderer,
     store::Storage,
     theme::Module,
-    Field, Renderer, Theme,
+    Context, Field, Renderer, Theme,
 };
 
-struct Site<R, S>
+pub struct Site<S, R>
 where
-    R: Renderer,
     S: Storage,
+    R: Renderer,
 {
     theme: Theme,
+    storage: S,
     renderer: R,
-    store: S,
 }
 
-impl<R, S> Site<R, S>
+impl<'t, S, R> Site<S, R>
 where
-    R: Renderer,
     S: Storage,
+    R: Renderer,
 {
-    fn new(theme: Theme, renderer: R, store: S) -> Self {
+    pub fn new(theme: Theme, storage: S, renderer: R) -> Self {
         Self {
             theme,
+            storage,
             renderer,
-            store,
         }
+    }
+
+    pub fn render_page<I>(&mut self, name: I) -> Result<String>
+    where
+        I: Into<String>,
+    {
+        let name = name.into();
+        let pages = self.storage.load_page(&name, &self.theme)?;
+        self.renderer.load(&self.theme)?;
+
+        self.renderer.render_page(&name, &Context::new())
     }
 }
 
-struct Template<'m> {
+pub struct Template<'m> {
     module: &'m Module,
     fields: HashMap<String, FieldValue>,
     areas: HashMap<String, Vec<Template<'m>>>,
 }
 
 impl<'m> Template<'m> {
-    fn new(module: &'m Module) -> Self {
-        let fields = HashMap::new();
-        let areas = HashMap::new();
+    pub fn new(
+        module: &'m Module,
+        fields: HashMap<String, FieldValue>,
+        areas: HashMap<String, Vec<Template<'m>>>,
+    ) -> Self {
         Self {
             module,
             fields,
@@ -81,44 +94,15 @@ impl<'m> Template<'m> {
         self.areas.get(&area).unwrap();
         Ok(())
     }
-
-    fn remove_template_from_area() {}
 }
 
-// struct Areas {
-//     available: Vec<String>,
-//     modules: AreaValue,
-// }
-
-// struct AreaValue {
-//     values: Vec<Template>,
-// }
-
-// struct Fields {
-//     available: Vec<String>,
-//     values: Vec<FieldValue>,
-// }
-
-// impl Fields {
-//     fn new(map: HashMap<String, Field>) -> Self {
-//         let available = vec![];
-//         let values = vec![];
-//         Self { available, values }
-//     }
-
-//     fn set<S>(&mut self, name: S, value: FieldValue) -> Result<()>
-//     where
-//         S: Into<String>,
-//     {
-//         Ok(())
-//     }
-
-//     fn get<S>(&self, name: S) -> Result<&FieldValue> {
-//         Ok(&self.values.get(0).unwrap())
-//     }
-// }
-
-struct FieldValue {
+pub struct FieldValue {
     r#type: Field,
     value: Box<dyn Any>,
+}
+
+impl FieldValue {
+    pub(crate) fn new(r#type: Field, value: Box<dyn Any>) -> Self {
+        Self { r#type, value }
+    }
 }
