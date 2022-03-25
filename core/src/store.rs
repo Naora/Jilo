@@ -1,32 +1,25 @@
-use std::{
-    any::Any,
-    collections::HashMap,
-    fs,
-    io::Read,
-    ops::Add,
-    path::{Path, PathBuf},
-};
+use std::{any::Any, collections::HashMap, fs, ops::Add, path::Path};
 
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 
 use crate::{
     error::{Error, Result},
-    site::Template,
-    Field, FieldValue, Theme,
+    site::Module,
+    Field, FieldValue,
 };
 
 pub trait Storage {
-    fn load<'t>(&self, theme: &'t Theme) -> Result<HashMap<String, Template<'t>>>;
-    fn load_page<'t, I>(&self, name: I, theme: &'t Theme) -> Result<Template<'t>>
+    fn load(&self) -> Result<HashMap<String, Module>>;
+    fn load_page<I>(&self, name: I) -> Result<Module>
     where
         I: Into<String>;
 
-    fn persist(&self, pages: HashMap<String, Template>);
+    fn persist(&self, pages: HashMap<String, Module>);
 }
 
 pub struct YamlStorage {
-    pattern: String,
+    base_path: String,
 }
 
 impl YamlStorage {
@@ -34,28 +27,30 @@ impl YamlStorage {
     where
         I: Into<String>,
     {
-        let path = base_path.into();
-        let pattern = path.add("/**/*.yml");
-        Self { pattern }
+        let base_path = base_path.into();
+        Self { base_path }
     }
 
     fn get_all_pages(&self) -> Vec<YamlPage> {
         let mut data = vec![];
-        for entry in glob::glob(&self.pattern).expect("Failed to read glob pattern") {
+        let pattern = self.base_path.clone().add("/**/*.yml");
+        for entry in glob::glob(&pattern).expect("Failed to read glob pattern") {
             let entry = entry.expect("Could not load data from directory {}");
-            let page = self.get_page(entry).expect("Could not retrieve file");
+            println!("{:?}", &entry);
+            let page = self.load_file(entry).expect("Could not retrieve file");
             data.push(page);
         }
         data
     }
 
-    fn get_page<P>(&self, path: P) -> Result<YamlPage>
+    fn load_file<P>(&self, path: P) -> Result<YamlPage>
     where
         P: AsRef<Path>,
     {
+        println!("{:?}", path.as_ref());
         let file = fs::File::open(path).or_else(|error| {
             Err(Error::store(format!(
-                "Could not open file with error \n{:?}",
+                "Could not open file with error {:?}",
                 error
             )))
         })?;
@@ -74,7 +69,7 @@ impl YamlStorage {
 #[derive(Serialize, Deserialize, Debug)]
 struct YamlPage {
     name: String,
-    module: String,
+    template: String,
     fields: Mapping,
 }
 
@@ -89,42 +84,40 @@ impl YamlPage {
         Ok(fields)
     }
 
-    fn as_template<'t>(&self, theme: &'t Theme) -> Result<Template<'t>> {
-        let module = theme
-            .pages
-            .get(&self.module)
-            .ok_or(Error::store("The module could not be found in the Theme."))?;
-
+    fn as_module(&self) -> Result<Module> {
+        let template = self.template.clone();
         let fields = self.get_fields()?;
-        Ok(Template::new(module, fields, HashMap::new()))
+        Ok(Module::new(template, fields, HashMap::new()))
     }
 }
 
 impl Storage for YamlStorage {
-    fn load<'t>(&self, theme: &'t Theme) -> Result<HashMap<String, Template<'t>>> {
+    fn load(&self) -> Result<HashMap<String, Module>> {
         let data = self.get_all_pages();
 
         let mut pages = HashMap::new();
         for page in data {
-            let template = page.as_template(theme)?;
+            let template = page.as_module()?;
             pages.insert(page.name.clone(), template);
         }
 
         Ok(pages)
     }
 
-    fn persist(&self, pages: HashMap<String, Template>) {
+    fn persist(&self, pages: HashMap<String, Module>) {
         todo!()
     }
 
-    fn load_page<'t, I>(&self, name: I, theme: &'t Theme) -> Result<Template<'t>>
+    fn load_page<I>(&self, name: I) -> Result<Module>
     where
         I: Into<String>,
     {
         let name = name.into();
-        let page_data = self.get_page(&name)?;
+        let file = format!("/{}.yml", name);
+        let path = self.base_path.clone().add(&file);
+        let page_data = self.load_file(path)?;
 
-        page_data.as_template(theme)
+        page_data.as_module()
     }
 }
 

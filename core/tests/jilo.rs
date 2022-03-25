@@ -29,7 +29,7 @@ fn create_pages() {
     let (renderer, storage, theme) = init();
 
     let mut site = Site::new(theme, storage, renderer);
-    let result = site.render_page("first article").unwrap();
+    let result = site.render_page("first_article").unwrap();
     assert!(result.contains("<html lang=\"en\">"));
     assert!(result.contains("<title>A Jilo Title</title>"));
 }

@@ -64,7 +64,8 @@ impl Renderer for TeraRenderer {
     }
 
     fn render_page(&self, name: &str, context: &Context) -> Result<String> {
-        let context = tera::Context::from(context);
+        let mut context = tera::Context::from(context);
+
         let name = format!("pages/{}", name);
         self.tera.render(&name, &context).or_else(|error| {
             Err(Error::renderer(format!(

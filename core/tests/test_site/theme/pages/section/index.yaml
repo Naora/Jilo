@@ -5,10 +5,10 @@ areas:
   areas_1:
     accept: without
     components:
-      - module_1
+      - template_1
   areas_2:
     accept: with
     components:
-      - module_1
+      - template_1
   areas_3:
     accept: all

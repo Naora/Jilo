@@ -1,4 +1,4 @@
 name: "second article"
-module: "article"
+template: "article"
 fields:
   title: "Hello Bernard"
