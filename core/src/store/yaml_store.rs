@@ -1,22 +1,11 @@
-use std::{collections::HashMap, fs, ops::Add, path::Path};
+use std::{collections::HashMap, fs, ops::Add, path};
 
 use serde::{Deserialize, Serialize};
-use serde_yaml;
 
 use crate::{
     error::{Error, Result},
-    site::Module,
-    Value,
+    Module, Storage, Value,
 };
-
-pub trait Storage {
-    fn load(&self) -> Result<HashMap<String, Module>>;
-    fn load_page<I>(&self, name: I) -> Result<Module>
-    where
-        I: Into<String>;
-
-    fn persist(&self, pages: HashMap<String, Module>);
-}
 
 pub struct YamlStorage {
     base_path: String,
@@ -45,7 +34,7 @@ impl YamlStorage {
 
     fn load_file<P>(&self, path: P) -> Result<YamlPage>
     where
-        P: AsRef<Path>,
+        P: AsRef<path::Path>,
     {
         println!("{:?}", path.as_ref());
         let file = fs::File::open(path).or_else(|error| {

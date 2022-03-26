@@ -1,4 +1,7 @@
-use core::{self, Module, Renderer, Site, TeraRenderer, Theme, Value, YamlStorage};
+use core::{
+    self, tera_renderer::TeraRenderer, yaml_store::YamlStorage, Module, Renderer, Site, Theme,
+    Value,
+};
 
 fn init() -> (TeraRenderer, YamlStorage, Theme) {
     let renderer = TeraRenderer::new();
@@ -24,6 +27,16 @@ fn create_render_page() {
 
 #[test]
 fn create_pages() {
+    let (renderer, storage, theme) = init();
+
+    let mut site = Site::new(theme, storage, renderer);
+    let result = site.render_page("first_article").unwrap();
+    assert!(result.contains("<html lang=\"en\">"));
+    assert!(result.contains("<title>A Jilo Title</title>"));
+}
+
+#[test]
+fn create_pages_with_areas() {
     let (renderer, storage, theme) = init();
 
     let mut site = Site::new(theme, storage, renderer);

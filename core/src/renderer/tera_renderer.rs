@@ -1,13 +1,7 @@
-use tera;
-
-use crate::error::{Error, Result};
-use crate::theme::Theme;
-use crate::{Module, Value};
-
-pub trait Renderer {
-    fn load(&mut self, theme: &Theme) -> Result<()>;
-    fn render_page(&self, name: &str, module: &Module) -> Result<String>;
-}
+use crate::{
+    error::{Error, Result},
+    Module, Renderer, Theme, Value,
+};
 
 #[derive(Debug)]
 pub struct TeraRenderer {
@@ -44,7 +38,7 @@ impl Renderer for TeraRenderer {
                 .add_template_file(&page.view, Some(&name))
                 .or_else(|error| {
                     Err(Error::renderer(format!(
-                        "Tera could not load page with error:\n\n{}",
+                        "Tera could not load page with error: {}",
                         error
                     )))
                 })?;
@@ -56,7 +50,7 @@ impl Renderer for TeraRenderer {
                 .add_template_file(&component.view, Some(&name))
                 .or_else(|error| {
                     Err(Error::renderer(format!(
-                        "Tera could not load component with error:\n\n{}",
+                        "Tera could not load component with error: {}",
                         error
                     )))
                 })?;
@@ -71,7 +65,7 @@ impl Renderer for TeraRenderer {
         let name = format!("pages/{}", name);
         self.tera.render(&name, &context).or_else(|error| {
             Err(Error::renderer(format!(
-                "Tera could not render page with error:\n\n{}",
+                "Tera could not render page with error: {}",
                 error
             )))
         })

@@ -2,13 +2,13 @@ view: view.html
 fields:
   field_1: string
 areas:
-  areas_1:
+  area_1:
     accept: without
     components:
-      - template_1
-  areas_2:
+      - header
+  area_2:
     accept: with
     components:
-      - template_1
-  areas_3:
+      - header
+  area_3:
     accept: all

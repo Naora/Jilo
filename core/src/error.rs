@@ -64,9 +64,10 @@ impl Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "\n Jilo Error")?;
-        write!(f, "\n Kind {}", self.kind)?;
-        write!(f, "\n Error is : \n{}", self.message)?;
+        writeln!(f, "Jilo Error")?;
+        writeln!(f, "Kind {}", self.kind)?;
+        writeln!(f, "Error is :")?;
+        writeln!(f, "{}", self.message)?;
 
         Ok(())
     }
