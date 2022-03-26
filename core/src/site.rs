@@ -37,6 +37,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct Module {
     template: String,
     fields: HashMap<String, FieldValue>,
@@ -57,13 +58,9 @@ impl Module {
     }
 }
 
-pub struct FieldValue {
-    r#type: Field,
-    value: Box<dyn Any>,
-}
-
-impl FieldValue {
-    pub(crate) fn new(r#type: Field, value: Box<dyn Any>) -> Self {
-        Self { r#type, value }
-    }
+#[derive(Debug)]
+pub enum FieldValue {
+    String(String),
+    Integer(usize),
+    Boolean(bool),
 }

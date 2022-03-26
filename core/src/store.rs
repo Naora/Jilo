@@ -125,13 +125,16 @@ impl TryFrom<&Value> for FieldValue {
     type Error = Error;
 
     fn try_from(value: &Value) -> std::result::Result<Self, Error> {
-        let (r#type, value): (Field, Box<dyn Any>) = match value {
-            Value::Bool(val) => (Field::Boolean, Box::new(val.to_owned())),
-            Value::Number(val) => (Field::Integer, Box::new(val.as_i64().unwrap())),
-            Value::String(val) => (Field::String, Box::new(val.to_owned())),
+        let field_value = match value {
+            Value::Bool(val) => FieldValue::Boolean(val.clone()),
+            Value::Number(val) => {
+                let value = val.as_i64().unwrap().try_into().unwrap();
+                FieldValue::Integer(value)
+            }
+            Value::String(val) => FieldValue::String(val.clone()),
             _ => return Err(Error::store("a null value cannot be loaded")),
         };
 
-        Ok(Self::new(r#type, value))
+        Ok(field_value)
     }
 }
