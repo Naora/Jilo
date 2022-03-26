@@ -1,6 +1,4 @@
-use core::{self, Context, Field, Renderer, Site, TeraRenderer, Theme, YamlStorage};
-
-use serde_yaml::Value;
+use core::{self, Module, Renderer, Site, TeraRenderer, Theme, Value, YamlStorage};
 
 fn init() -> (TeraRenderer, YamlStorage, Theme) {
     let renderer = TeraRenderer::new();
@@ -11,15 +9,15 @@ fn init() -> (TeraRenderer, YamlStorage, Theme) {
 
 #[test]
 fn create_render_page() {
-    let (mut renderer, storage, theme) = init();
-    let mut context = Context::new();
-    context.fields.insert(
+    let (mut renderer, _, theme) = init();
+    let mut module = Module::new("article");
+    module.fields.insert(
         "title".to_string(),
         Value::String("A Jilo Title".to_string()),
     );
 
     renderer.load(&theme).unwrap();
-    let result = renderer.render_page("article", &context).unwrap();
+    let result = renderer.render_page("article", &module).unwrap();
     assert!(result.contains("<html lang=\"en\">"));
     assert!(result.contains("<title>A Jilo Title</title>"));
 }

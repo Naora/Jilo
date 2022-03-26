@@ -1,6 +1,6 @@
-use std::{any::Any, collections::HashMap};
+use std::collections::HashMap;
 
-use crate::{error::Result, store::Storage, Context, Field, Renderer, Theme};
+use crate::{error::Result, store::Storage, Renderer, Theme};
 
 pub struct Site<S, R>
 where
@@ -33,33 +33,32 @@ where
         let page = self.storage.load_page(&name)?;
         self.renderer.load(&self.theme)?;
 
-        self.renderer.render_page(&page.template, &Context::new())
+        self.renderer.render_page(&page.template, &page)
     }
 }
 
 #[derive(Debug)]
 pub struct Module {
-    template: String,
-    fields: HashMap<String, FieldValue>,
-    areas: HashMap<String, Vec<Module>>,
+    pub template: String,
+    pub fields: HashMap<String, Value>,
+    pub areas: HashMap<String, Vec<Module>>,
 }
 
 impl Module {
-    pub fn new(
-        template: String,
-        fields: HashMap<String, FieldValue>,
-        areas: HashMap<String, Vec<Module>>,
-    ) -> Self {
+    pub fn new<I>(template: I) -> Self
+    where
+        I: Into<String>,
+    {
         Self {
-            template,
-            fields,
-            areas,
+            template: template.into(),
+            fields: HashMap::new(),
+            areas: HashMap::new(),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum FieldValue {
+pub enum Value {
     String(String),
     Integer(usize),
     Boolean(bool),

@@ -1,12 +1,12 @@
-use std::{any::Any, collections::HashMap, fs, ops::Add, path::Path};
+use std::{collections::HashMap, fs, ops::Add, path::Path};
 
 use serde::{Deserialize, Serialize};
-use serde_yaml::{Mapping, Value};
+use serde_yaml;
 
 use crate::{
     error::{Error, Result},
     site::Module,
-    Field, FieldValue,
+    Value,
 };
 
 pub trait Storage {
@@ -70,24 +70,24 @@ impl YamlStorage {
 struct YamlPage {
     name: String,
     template: String,
-    fields: Mapping,
+    fields: serde_yaml::Mapping,
 }
 
 impl YamlPage {
-    fn get_fields(&self) -> Result<HashMap<String, FieldValue>> {
+    fn get_fields(&self) -> Result<HashMap<String, Value>> {
         let mut fields = HashMap::new();
         for (key, value) in &self.fields {
             let name = key.as_str().unwrap().to_owned();
-            let field_value = FieldValue::try_from(value)?;
+            let field_value = Value::try_from(value)?;
             fields.insert(name, field_value);
         }
         Ok(fields)
     }
 
     fn as_module(&self) -> Result<Module> {
-        let template = self.template.clone();
-        let fields = self.get_fields()?;
-        Ok(Module::new(template, fields, HashMap::new()))
+        let mut module = Module::new(&self.template);
+        module.fields = self.get_fields()?;
+        Ok(module)
     }
 }
 
@@ -104,7 +104,7 @@ impl Storage for YamlStorage {
         Ok(pages)
     }
 
-    fn persist(&self, pages: HashMap<String, Module>) {
+    fn persist(&self, _: HashMap<String, Module>) {
         todo!()
     }
 
@@ -121,17 +121,17 @@ impl Storage for YamlStorage {
     }
 }
 
-impl TryFrom<&Value> for FieldValue {
+impl TryFrom<&serde_yaml::Value> for Value {
     type Error = Error;
 
-    fn try_from(value: &Value) -> std::result::Result<Self, Error> {
+    fn try_from(value: &serde_yaml::Value) -> std::result::Result<Self, Error> {
         let field_value = match value {
-            Value::Bool(val) => FieldValue::Boolean(val.clone()),
-            Value::Number(val) => {
+            serde_yaml::Value::Bool(val) => Value::Boolean(val.clone()),
+            serde_yaml::Value::Number(val) => {
                 let value = val.as_i64().unwrap().try_into().unwrap();
-                FieldValue::Integer(value)
+                Value::Integer(value)
             }
-            Value::String(val) => FieldValue::String(val.clone()),
+            serde_yaml::Value::String(val) => Value::String(val.clone()),
             _ => return Err(Error::store("a null value cannot be loaded")),
         };
 

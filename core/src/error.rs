@@ -10,7 +10,6 @@ pub type Result<'a, T> = result::Result<T, Error>;
 pub enum ErrorKind {
     Theme,
     Renderer,
-    Site,
     Store,
 }
 
@@ -19,7 +18,6 @@ impl Display for ErrorKind {
         match self {
             ErrorKind::Theme => write!(f, "Theme"),
             ErrorKind::Renderer => write!(f, "Renderer"),
-            ErrorKind::Site => write!(f, "Site"),
             ErrorKind::Store => write!(f, "Store"),
         }
     }
@@ -54,13 +52,6 @@ impl Error {
         S: Into<String>,
     {
         Error::new(ErrorKind::Theme, message)
-    }
-
-    pub(crate) fn site<S>(message: S) -> Error
-    where
-        S: Into<String>,
-    {
-        Error::new(ErrorKind::Site, message)
     }
 
     pub(crate) fn store<S>(message: S) -> Error

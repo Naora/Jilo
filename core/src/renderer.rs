@@ -1,14 +1,12 @@
-use std::collections::HashMap;
-
-use serde_yaml::Value;
 use tera;
 
 use crate::error::{Error, Result};
 use crate::theme::Theme;
+use crate::{Module, Value};
 
 pub trait Renderer {
     fn load(&mut self, theme: &Theme) -> Result<()>;
-    fn render_page(&self, name: &str, context: &Context) -> Result<String>;
+    fn render_page(&self, name: &str, module: &Module) -> Result<String>;
 }
 
 #[derive(Debug)]
@@ -24,13 +22,17 @@ impl TeraRenderer {
     }
 }
 
-impl From<&Context> for tera::Context {
-    fn from(context: &Context) -> Self {
-        let mut result = tera::Context::new();
-        for (name, value) in &context.fields {
-            result.insert(name, &value);
+impl From<&Module> for tera::Context {
+    fn from(module: &Module) -> Self {
+        let mut context = tera::Context::new();
+        for (name, value) in &module.fields {
+            match value {
+                Value::String(val) => context.insert(name, val),
+                Value::Integer(val) => context.insert(name, val),
+                Value::Boolean(val) => context.insert(name, val),
+            };
         }
-        result
+        context
     }
 }
 
@@ -63,9 +65,8 @@ impl Renderer for TeraRenderer {
         Ok(())
     }
 
-    fn render_page(&self, name: &str, context: &Context) -> Result<String> {
-        let mut context = tera::Context::from(context);
-        context.insert("title", "test");
+    fn render_page(&self, name: &str, module: &Module) -> Result<String> {
+        let context = tera::Context::from(module);
 
         let name = format!("pages/{}", name);
         self.tera.render(&name, &context).or_else(|error| {
@@ -74,19 +75,5 @@ impl Renderer for TeraRenderer {
                 error
             )))
         })
-    }
-}
-
-pub struct Context {
-    pub fields: HashMap<String, Value>,
-    pub areas: HashMap<String, Context>,
-}
-
-impl Context {
-    pub fn new() -> Self {
-        Self {
-            fields: HashMap::new(),
-            areas: HashMap::new(),
-        }
     }
 }
