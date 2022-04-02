@@ -1,3 +1,7 @@
+use std::{collections::HashMap, ops::Add};
+
+use tera::{self, Context};
+
 use crate::{
     error::{Error, Result},
     Module, Renderer, Theme, Value,
@@ -9,9 +13,27 @@ pub struct TeraRenderer {
 }
 
 impl TeraRenderer {
-    pub fn new() -> Self {
-        Self {
-            tera: Default::default(),
+    fn render_module(&mut self, module: &Module) -> Result<String> {
+        self.render_areas(module)
+    }
+
+    fn render_areas(&mut self, module: &Module) -> Result<String> {
+        let context = Context::from(module);
+        for (name, modules) in &module.areas {
+            let area_html = String::new();
+            for module in modules {
+                let partial = self.render_module(module)?;
+                area_html = area_html.add(&partial);
+            }
+            context.insert(name, &area_html);
+        }
+        let name = format!("components/{}", module.template);
+        match self.tera.render(&name, &context) {
+            Ok(html) => Ok(html),
+            Err(err) => Err(Error::renderer(format!(
+                "Could not render area with error {:?}",
+                err
+            ))),
         }
     }
 }
@@ -27,6 +49,23 @@ impl From<&Module> for tera::Context {
             };
         }
         context
+    }
+}
+
+pub struct AreaFunc;
+
+impl tera::Function for AreaFunc {
+    fn call(&self, args: &HashMap<String, tera::Value>) -> tera::Result<tera::Value> {
+        println!("{:?}", args);
+        Ok(tera::to_value("this is a value").unwrap())
+    }
+}
+
+impl Default for TeraRenderer {
+    fn default() -> Self {
+        let mut tera: tera::Tera = Default::default();
+        tera.register_function("area", AreaFunc);
+        Self { tera }
     }
 }
 
@@ -60,7 +99,7 @@ impl Renderer for TeraRenderer {
     }
 
     fn render_page(&self, name: &str, module: &Module) -> Result<String> {
-        let context = tera::Context::from(module);
+        let html = self.render_module(module)?;
 
         let name = format!("pages/{}", name);
         self.tera.render(&name, &context).or_else(|error| {

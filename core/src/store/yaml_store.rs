@@ -25,7 +25,6 @@ impl YamlStorage {
         let pattern = self.base_path.clone().add("/**/*.yml");
         for entry in glob::glob(&pattern).expect("Failed to read glob pattern") {
             let entry = entry.expect("Could not load data from directory {}");
-            println!("{:?}", &entry);
             let page = self.load_file(entry).expect("Could not retrieve file");
             data.push(page);
         }
@@ -36,7 +35,6 @@ impl YamlStorage {
     where
         P: AsRef<path::Path>,
     {
-        println!("{:?}", path.as_ref());
         let file = fs::File::open(path).or_else(|error| {
             Err(Error::store(format!(
                 "Could not open file with error {:?}",

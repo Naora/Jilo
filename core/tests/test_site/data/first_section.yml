@@ -1,0 +1,4 @@
+name: "first section"
+template: "section"
+fields:
+  title: "A Jilo Title"

@@ -4,7 +4,7 @@ use core::{
 };
 
 fn init() -> (TeraRenderer, YamlStorage, Theme) {
-    let renderer = TeraRenderer::new();
+    let renderer = TeraRenderer::default();
     let storage = YamlStorage::new("./tests/test_site/data");
     let theme = Theme::new("./tests/test_site/theme");
     (renderer, storage, theme)
@@ -40,7 +40,7 @@ fn create_pages_with_areas() {
     let (renderer, storage, theme) = init();
 
     let mut site = Site::new(theme, storage, renderer);
-    let result = site.render_page("first_article").unwrap();
+    let result = site.render_page("first_section").unwrap();
     assert!(result.contains("<html lang=\"en\">"));
     assert!(result.contains("<title>A Jilo Title</title>"));
 }
