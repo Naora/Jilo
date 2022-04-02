@@ -1,4 +1,4 @@
 name: "second article"
-template: "article"
+template: "/pages/article"
 fields:
   title: "Hello Bernard"

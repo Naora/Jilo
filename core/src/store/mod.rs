@@ -4,7 +4,7 @@ use crate::{error::Result, site::Module};
 
 pub mod yaml_store;
 
-pub trait Storage {
+pub trait Store {
     fn load(&self) -> Result<HashMap<String, Module>>;
     fn load_page<I>(&self, name: I) -> Result<Module>
     where

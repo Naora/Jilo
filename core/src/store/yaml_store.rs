@@ -1,10 +1,14 @@
-use std::{collections::HashMap, fs, ops::Add, path};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{self},
+};
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
     error::{Error, Result},
-    Module, Storage, Value,
+    Module, Store, Value,
 };
 
 pub struct YamlStorage {
@@ -22,7 +26,7 @@ impl YamlStorage {
 
     fn get_all_pages(&self) -> Vec<YamlPage> {
         let mut data = vec![];
-        let pattern = self.base_path.clone().add("/**/*.yml");
+        let pattern = format!("{}{}", self.base_path, "/**/*.yml");
         for entry in glob::glob(&pattern).expect("Failed to read glob pattern") {
             let entry = entry.expect("Could not load data from directory {}");
             let page = self.load_file(entry).expect("Could not retrieve file");
@@ -78,7 +82,7 @@ impl YamlPage {
     }
 }
 
-impl Storage for YamlStorage {
+impl Store for YamlStorage {
     fn load(&self) -> Result<HashMap<String, Module>> {
         let data = self.get_all_pages();
 
@@ -100,8 +104,7 @@ impl Storage for YamlStorage {
         I: Into<String>,
     {
         let name = name.into();
-        let file = format!("/{}.yml", name);
-        let path = self.base_path.clone().add(&file);
+        let path = format!("{}/{}.yml", self.base_path, name);
         let page_data = self.load_file(path)?;
 
         page_data.as_module()

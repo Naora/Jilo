@@ -1,10 +1,10 @@
-use std::{collections::HashMap, ops::Add};
+use std::collections::HashMap;
 
 use tera::{self, Context};
 
 use crate::{
     error::{Error, Result},
-    Module, Renderer, Theme, Value,
+    Module, Render, Theme, Value,
 };
 
 #[derive(Debug)]
@@ -12,35 +12,10 @@ pub struct TeraRenderer {
     tera: tera::Tera,
 }
 
-impl TeraRenderer {
-    fn render_module(&mut self, module: &Module) -> Result<String> {
-        self.render_areas(module)
-    }
-
-    fn render_areas(&mut self, module: &Module) -> Result<String> {
-        let context = Context::from(module);
-        for (name, modules) in &module.areas {
-            let area_html = String::new();
-            for module in modules {
-                let partial = self.render_module(module)?;
-                area_html = area_html.add(&partial);
-            }
-            context.insert(name, &area_html);
-        }
-        let name = format!("components/{}", module.template);
-        match self.tera.render(&name, &context) {
-            Ok(html) => Ok(html),
-            Err(err) => Err(Error::renderer(format!(
-                "Could not render area with error {:?}",
-                err
-            ))),
-        }
-    }
-}
-
 impl From<&Module> for tera::Context {
     fn from(module: &Module) -> Self {
         let mut context = tera::Context::new();
+
         for (name, value) in &module.fields {
             match value {
                 Value::String(val) => context.insert(name, val),
@@ -69,12 +44,11 @@ impl Default for TeraRenderer {
     }
 }
 
-impl Renderer for TeraRenderer {
+impl Render for TeraRenderer {
     fn load(&mut self, theme: &Theme) -> Result<()> {
-        for (name, page) in &theme.pages {
-            let name = format!("pages/{}", name);
+        for (name, page) in &theme.templates {
             self.tera
-                .add_template_file(&page.view, Some(&name))
+                .add_template_file(&page.view, Some(name))
                 .or_else(|error| {
                     Err(Error::renderer(format!(
                         "Tera could not load page with error: {}",
@@ -83,30 +57,26 @@ impl Renderer for TeraRenderer {
                 })?;
         }
 
-        for (name, component) in &theme.components {
-            let name = format!("components/{}", name);
-            self.tera
-                .add_template_file(&component.view, Some(&name))
-                .or_else(|error| {
-                    Err(Error::renderer(format!(
-                        "Tera could not load component with error: {}",
-                        error
-                    )))
-                })?;
-        }
-
         Ok(())
     }
 
-    fn render_page(&self, name: &str, module: &Module) -> Result<String> {
-        let html = self.render_module(module)?;
+    fn render_module(&mut self, module: &Module) -> Result<String> {
+        let mut context = Context::from(module);
+        for (name, modules) in &module.areas {
+            let mut area_html = String::new();
+            for module in modules {
+                let partial = self.render_module(module)?;
+                area_html = area_html + &partial;
+            }
+            context.insert(name, &area_html);
+        }
 
-        let name = format!("pages/{}", name);
-        self.tera.render(&name, &context).or_else(|error| {
-            Err(Error::renderer(format!(
-                "Tera could not render page with error: {}",
-                error
-            )))
-        })
+        match self.tera.render(&module.template, &context) {
+            Ok(html) => Ok(html),
+            Err(err) => Err(Error::renderer(format!(
+                "Could not render area with error {:?}",
+                err
+            ))),
+        }
     }
 }

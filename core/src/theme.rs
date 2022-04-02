@@ -58,41 +58,57 @@ pub enum Area {
 
 #[derive(Debug)]
 pub struct Theme {
-    pub pages: HashMap<String, Template>,
-    pub components: HashMap<String, Template>,
+    pub templates: HashMap<String, Template>,
 }
 
-impl Theme {
-    pub fn new(base_path: &str) -> Self {
-        let pages = parse_templates(&format!("{}{}", base_path, "/pages/*/index.yaml"));
-        let components = parse_templates(&format!("{}{}", base_path, "/components/*/index.yaml"));
+impl TryFrom<&PathBuf> for Theme {
+    type Error = Error;
 
-        Self { pages, components }
+    fn try_from(base_path: &PathBuf) -> Result<Self> {
+        let mut templates = HashMap::new();
+
+        let canonical = get_canonical(base_path)?;
+
+        let pattern = format!("{}{}", canonical, "/**/index.yaml");
+        for entry in glob::glob(&pattern).unwrap() {
+            let mut path = match entry {
+                Ok(path) => path,
+                Err(error) => {
+                    return Err(Error::theme(format!(
+                        "Could not retrieve path from glob, {}",
+                        error
+                    )))
+                }
+            };
+            let template = Template::from(&path);
+            path.pop();
+            let parent_canonical = get_canonical(&path)?;
+            let name = match parent_canonical.split(&canonical).last() {
+                Some(str) => str,
+                None => return Err(Error::theme("Could not find relative path to theme")),
+            };
+            templates.insert(name.to_string(), template);
+        }
+
+        Ok(Self { templates })
     }
 }
 
-fn parse_templates(pattern: &str) -> HashMap<String, Template> {
-    let mut result = HashMap::new();
-    for entry in glob::glob(pattern).expect("Failed to read glob pattern") {
-        let path = entry.expect("Failed to read path from glob");
-        let template = Template::from(&path);
-        let name = get_parent_name(&path).unwrap();
-        result.insert(name, template);
-    }
-
-    result
-}
-
-fn get_parent_name(path: &PathBuf) -> Result<String> {
-    let parent = path
-        .parent()
-        .ok_or(Error::theme("The template has no parent folder."))?;
-
-    let name = parent
-        .file_name()
-        .ok_or(Error::theme("The parent folder has no name."))?;
-
-    Ok(name.to_string_lossy().into_owned())
+fn get_canonical(base_path: &PathBuf) -> Result<String> {
+    let canonical = match base_path.canonicalize() {
+        Ok(path_buf) => path_buf,
+        Err(error) => {
+            return Err(Error::theme(format!(
+                "Could not convert base path into valid canonical path, {}",
+                error
+            )))
+        }
+    };
+    let canonical = match canonical.to_str() {
+        Some(str) => str,
+        None => return Err(Error::theme("Could not convert path into valid UTF8")),
+    };
+    Ok(canonical.to_string())
 }
 
 #[cfg(test)]

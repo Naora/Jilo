@@ -4,7 +4,7 @@ use crate::Module;
 
 pub mod tera_renderer;
 
-pub trait Renderer {
+pub trait Render {
     fn load(&mut self, theme: &Theme) -> Result<()>;
-    fn render_page(&self, name: &str, module: &Module) -> Result<String>;
+    fn render_module(&mut self, module: &Module) -> Result<String>;
 }
