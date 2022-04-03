@@ -3,11 +3,11 @@ fields:
   field_1: string
 areas:
   area_1:
-    accept: without
+    accept: with
     components:
       - header
   area_2:
-    accept: with
+    accept: without
     components:
       - header
   area_3:

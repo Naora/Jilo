@@ -94,12 +94,12 @@ impl TryFrom<&PathBuf> for Theme {
     }
 }
 
-fn get_canonical(base_path: &PathBuf) -> Result<String> {
-    let canonical = match base_path.canonicalize() {
+fn get_canonical(path: &PathBuf) -> Result<String> {
+    let canonical = match path.canonicalize() {
         Ok(path_buf) => path_buf,
         Err(error) => {
             return Err(Error::theme(format!(
-                "Could not convert base path into valid canonical path, {}",
+                "Could not convert path into valid canonical path, {}",
                 error
             )))
         }

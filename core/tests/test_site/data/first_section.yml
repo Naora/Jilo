@@ -2,3 +2,16 @@ name: "first section"
 template: "/pages/section"
 fields:
   title: "A Jilo Title"
+areas:
+  area_1:
+    - template: "/components/header"
+      fields:
+        title: "Hello Henry"
+  area_2:
+    - template: "/components/header"
+      fields:
+        title: "Hello Henry"
+  area_3:
+    - template: "/components/header"
+      fields:
+        title: "Hello Henry"
