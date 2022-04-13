@@ -1,6 +1,4 @@
-use core::{
-    self, tera_renderer::TeraRenderer, yaml_store::YamlStorage, Module, Render, Site, SiteBuilder,
-};
+use core::{self, tera_renderer::TeraRenderer, yaml_store::YamlStorage, Site, SiteBuilder};
 use std::path::PathBuf;
 
 fn init() -> Site<YamlStorage, TeraRenderer> {
@@ -28,7 +26,6 @@ fn create_pages_with_areas() {
     let mut site = init();
 
     let result = site.render_page("first_section").unwrap();
-    println!("{}", result);
     assert!(result.contains("<html lang=\"en\">"));
-    assert!(result.contains("<title>A Jilo Title</title>"));
+    assert!(result.contains("<span>Hello Henry</span>"));
 }

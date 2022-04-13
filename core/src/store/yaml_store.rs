@@ -169,7 +169,6 @@ impl TryFrom<&serde_yaml::Value> for YamlPage {
     type Error = Error;
 
     fn try_from(value: &serde_yaml::Value) -> Result<Self> {
-        dbg!(value);
         let module: YamlPage = serde_yaml::from_value(value.to_owned()).unwrap();
 
         Ok(module)
