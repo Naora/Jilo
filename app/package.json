@@ -1,0 +1,21 @@
+{
+  "name": "jilo-spa",
+  "version": "1.0.0",
+  "description": "jilo spa",
+  "scripts": {
+    "build": "elm make src/Main.elm --output=public/main.js",
+    "elm": "elm"
+  },
+  "keywords": [
+    "elm",
+    "cms",
+    "spa"
+  ],
+  "author": "",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "elm": "^0.19.1-5",
+    "elm-format": "^0.8.5",
+    "elm-test": "^0.19.1-revision7"
+  }
+}

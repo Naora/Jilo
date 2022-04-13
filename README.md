@@ -22,16 +22,14 @@ L'idee de module est de données la possibilité de faire du plug and play.
 Un developpeur ajoute des fonctionnalités et les ajoutes aux site.
 L'utilisateur lui peu ajouter ce module a des pages.
 
-# Tache a effectuer
+## Back (Rust)
 
-## V1
+Rust est un langage performant et qui laisse peu de marge d'erreur. Donc idéal pour un serveur web. Cela permettra de l'installer même sur un raspberry pi.
 
-- [ ] Faire en sorte de detecter un fichier nommée \*.jilo.toml
+## Front (ELM)
 
-## V2
+On va mettre en place de l'elm pour la partie SPA car ça syntaxe et ça gestion des erreurs est bien plus puissante que javascript avec du React ou du Vue. De plus la partie front ne devrait pas etre trop compliqué a gérer.
 
-- [ ] S'il existe plusieurs \*.jilo.toml il y a lieu de mettre en place un system multisite
+## Orchestrateur de creation (Make)
 
-## V3
-
-- [ ] Mettre en place un parcours de création de site
+Le plus basique c'est d'utiliser make qui permet d'automatiser tout la gestion des différents projets entre eux.
