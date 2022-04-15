@@ -74,3 +74,21 @@ impl fmt::Display for Error {
 }
 
 impl error::Error for Error {}
+
+impl From<std::io::Error> for Error {
+    fn from(io_error: std::io::Error) -> Self {
+        Error::theme(format!("A IO error occured: {}", io_error))
+    }
+}
+
+impl From<glob::GlobError> for Error {
+    fn from(glob_error: glob::GlobError) -> Self {
+        Error::theme(format!("A Glob error occured: {}", glob_error))
+    }
+}
+
+impl From<serde_yaml::Error> for Error {
+    fn from(yaml_error: serde_yaml::Error) -> Self {
+        Error::store(format!("A Serde Yaml error occured: {}", yaml_error))
+    }
+}

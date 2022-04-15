@@ -71,15 +71,7 @@ impl TryFrom<&PathBuf> for Theme {
 
         let pattern = format!("{}{}", canonical, "/**/index.yaml");
         for entry in glob::glob(&pattern).unwrap() {
-            let mut path = match entry {
-                Ok(path) => path,
-                Err(error) => {
-                    return Err(Error::theme(format!(
-                        "Could not retrieve path from glob, {}",
-                        error
-                    )))
-                }
-            };
+            let mut path = entry?;
             let template = Template::from(&path);
             path.pop();
             let parent_canonical = get_canonical(&path)?;
@@ -95,15 +87,7 @@ impl TryFrom<&PathBuf> for Theme {
 }
 
 fn get_canonical(path: &PathBuf) -> Result<String> {
-    let canonical = match path.canonicalize() {
-        Ok(path_buf) => path_buf,
-        Err(error) => {
-            return Err(Error::theme(format!(
-                "Could not convert path into valid canonical path, {}",
-                error
-            )))
-        }
-    };
+    let canonical = path.canonicalize()?;
     let canonical = match canonical.to_str() {
         Some(str) => str,
         None => return Err(Error::theme("Could not convert path into valid UTF8")),

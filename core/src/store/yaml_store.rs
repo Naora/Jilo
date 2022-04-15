@@ -44,25 +44,8 @@ impl YamlStorage {
     where
         P: AsRef<path::Path>,
     {
-        let file = match fs::File::open(path) {
-            Ok(file) => file,
-            Err(error) => {
-                return Err(Error::store(format!(
-                    "Could not open file with error {:?}",
-                    error
-                )))
-            }
-        };
-
-        let data = match serde_yaml::from_reader(file) {
-            Ok(data) => data,
-            Err(error) => {
-                return Err(Error::store(format!(
-                    "Could not deserialize data with error {:?}",
-                    error
-                )))
-            }
-        };
+        let file = fs::File::open(path)?;
+        let data = serde_yaml::from_reader(file)?;
 
         Ok(data)
     }
