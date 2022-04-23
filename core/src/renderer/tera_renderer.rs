@@ -27,7 +27,7 @@ impl From<&Module> for tera::Context {
     }
 }
 
-pub struct AreaFunc;
+struct AreaFunc;
 
 impl tera::Function for AreaFunc {
     fn call(&self, args: &HashMap<String, tera::Value>) -> tera::Result<tera::Value> {

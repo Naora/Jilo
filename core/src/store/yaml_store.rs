@@ -102,6 +102,10 @@ impl YamlPage {
 }
 
 impl Store for YamlStorage {
+    fn summary(&self) -> Result<Vec<String>> {
+        todo!()
+    }
+
     fn load(&self) -> Result<HashMap<String, Module>> {
         let data = self.get_all_pages();
 
@@ -114,19 +118,15 @@ impl Store for YamlStorage {
         Ok(pages)
     }
 
-    fn persist(&self, _: HashMap<String, Module>) {
-        todo!()
-    }
-
-    fn load_page<I>(&self, name: I) -> Result<Module>
-    where
-        I: Into<String>,
-    {
-        let name = name.into();
+    fn load_page(&self, name: &String) -> Result<Module> {
         let path = format!("{}/{}.yml", self.base_path, name);
         let page_data = self.load_file(path)?;
 
         page_data.as_module()
+    }
+
+    fn persist(&self, _: HashMap<String, Module>) {
+        todo!()
     }
 }
 

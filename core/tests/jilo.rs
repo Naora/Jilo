@@ -1,4 +1,4 @@
-use core::{self, tera_renderer::TeraRenderer, yaml_store::YamlStorage, Site, SiteBuilder};
+use core::{self, tera_renderer::TeraRenderer, yaml_store::YamlStorage, Site, SiteBuilder, Store};
 use std::path::PathBuf;
 
 fn init() -> Site<YamlStorage, TeraRenderer> {
@@ -13,7 +13,7 @@ fn init() -> Site<YamlStorage, TeraRenderer> {
 }
 
 #[test]
-fn create_pages() {
+fn render_pages() {
     let mut site = init();
 
     let result = site.render_page("first_article").unwrap();
@@ -22,10 +22,18 @@ fn create_pages() {
 }
 
 #[test]
-fn create_pages_with_areas() {
+fn render_pages_with_areas() {
     let mut site = init();
 
     let result = site.render_page("first_section").unwrap();
     assert!(result.contains("<html lang=\"en\">"));
     assert!(result.contains("<span>Hello Henry</span>"));
+}
+
+#[test]
+fn create_pages() {
+    let storage = YamlStorage::new("./tests/test_site/yaml_storage.yml");
+    let pages = storage.summary().unwrap();
+    dbg!(pages);
+    assert!(false);
 }
