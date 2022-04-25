@@ -7,7 +7,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::{Error, Result},
+    error::{StoreError, StoreErrorKind},
     Module, Store, Value,
 };
 
@@ -24,10 +24,10 @@ impl YamlStorage {
         Self { base_path }
     }
 
-    fn get_all_pages(&self) -> HashMap<String, YamlPage> {
+    fn get_all_pages(&self) -> Result<HashMap<String, YamlPage>, StoreError> {
         let mut data = HashMap::new();
         let pattern = format!("{}{}", self.base_path, "/**/*.yml");
-        for entry in glob::glob(&pattern).expect("Failed to read glob pattern") {
+        for entry in glob::glob(&pattern)? {
             let entry = entry.expect("Could not load data from directory {}");
             let page = self.load_file(&entry).expect("Could not retrieve file");
             let file_name = entry.file_name().unwrap();
@@ -37,10 +37,10 @@ impl YamlStorage {
             let name = file_name.trim_end_matches(extention);
             data.insert(name.to_string(), page);
         }
-        data
+        Ok(data)
     }
 
-    fn load_file<P>(&self, path: P) -> Result<YamlPage>
+    fn load_file<P>(&self, path: P) -> Result<YamlPage, StoreError>
     where
         P: AsRef<path::Path>,
     {
@@ -59,7 +59,7 @@ struct YamlPage {
 }
 
 impl YamlPage {
-    fn get_fields(&self) -> Result<HashMap<String, Value>> {
+    fn get_fields(&self) -> Result<HashMap<String, Value>, StoreError> {
         let mut fields = HashMap::new();
         for (key, value) in &self.fields {
             let name = key.as_str().unwrap().to_owned();
@@ -69,7 +69,7 @@ impl YamlPage {
         Ok(fields)
     }
 
-    fn get_areas(&self) -> Result<HashMap<String, Vec<Module>>> {
+    fn get_areas(&self) -> Result<HashMap<String, Vec<Module>>, StoreError> {
         let mut areas = HashMap::new();
         if let Some(mappings) = &self.areas {
             for (key, value) in mappings {
@@ -81,19 +81,13 @@ impl YamlPage {
                         modules.push(areas.as_module()?);
                     }
                     areas.insert(name, modules);
-                } else {
-                    let message = format!(
-                        "Expected to find a yaml sequence in areas. But found {:?}",
-                        value
-                    );
-                    return Err(Error::store(message));
                 }
             }
         }
         Ok(areas)
     }
 
-    fn as_module(&self) -> Result<Module> {
+    fn as_module(&self) -> Result<Module, StoreError> {
         let mut module = Module::new(&self.template);
         module.fields = self.get_fields()?;
         module.areas = self.get_areas()?;
@@ -102,12 +96,12 @@ impl YamlPage {
 }
 
 impl Store for YamlStorage {
-    fn summary(&self) -> Result<Vec<String>> {
+    fn summary(&self) -> Result<Vec<String>, StoreError> {
         todo!()
     }
 
-    fn load(&self) -> Result<HashMap<String, Module>> {
-        let data = self.get_all_pages();
+    fn get_pages(&self) -> Result<HashMap<String, Module>, StoreError> {
+        let data = self.get_all_pages()?;
 
         let mut pages = HashMap::new();
         for (name, page) in data {
@@ -118,7 +112,7 @@ impl Store for YamlStorage {
         Ok(pages)
     }
 
-    fn load_page(&self, name: &String) -> Result<Module> {
+    fn get_page_by_name(&self, name: &String) -> Result<Module, StoreError> {
         let path = format!("{}/{}.yml", self.base_path, name);
         let page_data = self.load_file(path)?;
 
@@ -131,9 +125,9 @@ impl Store for YamlStorage {
 }
 
 impl TryFrom<&serde_yaml::Value> for Value {
-    type Error = Error;
+    type Error = StoreError;
 
-    fn try_from(value: &serde_yaml::Value) -> Result<Self> {
+    fn try_from(value: &serde_yaml::Value) -> Result<Self, Self::Error> {
         let field_value = match value {
             serde_yaml::Value::Bool(val) => Value::Boolean(val.clone()),
             serde_yaml::Value::Number(val) => {
@@ -141,7 +135,7 @@ impl TryFrom<&serde_yaml::Value> for Value {
                 Value::Integer(value)
             }
             serde_yaml::Value::String(val) => Value::String(val.clone()),
-            _ => return Err(Error::store("a null value cannot be loaded")),
+            _ => return Err(StoreError::new(StoreErrorKind::LoadPageError)),
         };
 
         Ok(field_value)
@@ -149,11 +143,35 @@ impl TryFrom<&serde_yaml::Value> for Value {
 }
 
 impl TryFrom<&serde_yaml::Value> for YamlPage {
-    type Error = Error;
+    type Error = StoreError;
 
-    fn try_from(value: &serde_yaml::Value) -> Result<Self> {
+    fn try_from(value: &serde_yaml::Value) -> Result<Self, Self::Error> {
         let module: YamlPage = serde_yaml::from_value(value.to_owned()).unwrap();
 
         Ok(module)
+    }
+}
+
+impl From<glob::GlobError> for StoreError {
+    fn from(glob_error: glob::GlobError) -> Self {
+        StoreError::with(StoreErrorKind::LoadPageError, glob_error)
+    }
+}
+
+impl From<glob::PatternError> for StoreError {
+    fn from(pattern_error: glob::PatternError) -> Self {
+        StoreError::with(StoreErrorKind::LoadPageError, pattern_error)
+    }
+}
+
+impl From<std::io::Error> for StoreError {
+    fn from(io_error: std::io::Error) -> Self {
+        StoreError::with(StoreErrorKind::IoError, io_error)
+    }
+}
+
+impl From<serde_yaml::Error> for StoreError {
+    fn from(serde_error: serde_yaml::Error) -> Self {
+        StoreError::with(StoreErrorKind::LoadPageError, serde_error)
     }
 }

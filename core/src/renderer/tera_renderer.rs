@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use tera::{self, Context};
 
 use crate::{
-    error::{Error, Result},
+    error::{RenderError, RenderErrorKind},
     Module, Render, Theme, Value,
 };
 
@@ -45,22 +45,15 @@ impl Default for TeraRenderer {
 }
 
 impl Render for TeraRenderer {
-    fn load(&mut self, theme: &Theme) -> Result<()> {
+    fn load(&mut self, theme: &Theme) -> Result<(), RenderError> {
         for (name, page) in &theme.templates {
-            self.tera
-                .add_template_file(&page.view, Some(name))
-                .or_else(|error| {
-                    Err(Error::renderer(format!(
-                        "Tera could not load page with error: {}",
-                        error
-                    )))
-                })?;
+            self.tera.add_template_file(&page.view, Some(name))?;
         }
 
         Ok(())
     }
 
-    fn render_module(&mut self, module: &Module) -> Result<String> {
+    fn render_module(&mut self, module: &Module) -> Result<String, RenderError> {
         let mut context = Context::from(module);
         for (name, modules) in &module.areas {
             let mut area_html = String::new();
@@ -71,12 +64,13 @@ impl Render for TeraRenderer {
             context.insert(name, &area_html);
         }
 
-        match self.tera.render(&module.template, &context) {
-            Ok(html) => Ok(html),
-            Err(err) => Err(Error::renderer(format!(
-                "Could not render area with error {:?}",
-                err
-            ))),
-        }
+        let html = self.tera.render(&module.template, &context)?;
+        Ok(html)
+    }
+}
+
+impl From<tera::Error> for RenderError {
+    fn from(tera_error: tera::Error) -> Self {
+        RenderError::with(RenderErrorKind::RenderModuleError, tera_error)
     }
 }

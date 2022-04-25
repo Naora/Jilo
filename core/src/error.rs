@@ -1,94 +1,82 @@
-use std::{
-    error,
-    fmt::{self, Display},
-    result,
-};
-
-pub type Result<'a, T> = result::Result<T, Error>;
+use std::{error::Error as StdError, fmt};
 
 #[derive(Debug)]
-pub enum ErrorKind {
-    Theme,
-    Renderer,
-    Store,
+pub struct Error<T>
+where
+    T: fmt::Debug + fmt::Display + Sync + Send,
+{
+    kind: T,
+    source: Option<Box<dyn StdError + Sync + Send>>,
 }
 
-impl Display for ErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ErrorKind::Theme => write!(f, "Theme"),
-            ErrorKind::Renderer => write!(f, "Renderer"),
-            ErrorKind::Store => write!(f, "Store"),
-        }
+impl<T> Error<T>
+where
+    T: fmt::Debug + fmt::Display + Sync + Send,
+{
+    pub fn new(kind: T) -> Self {
+        Self { kind, source: None }
     }
-}
 
-#[derive(Debug)]
-pub struct Error {
-    kind: ErrorKind,
-    message: String,
-}
-
-impl Error {
-    pub fn new<S>(kind: ErrorKind, message: S) -> Self
+    pub fn with<S>(kind: T, source: S) -> Self
     where
-        S: Into<String>,
+        S: StdError + 'static + Sync + Send,
     {
         Self {
             kind,
-            message: message.into(),
+            source: Some(Box::new(source)),
         }
     }
-
-    pub(crate) fn renderer<S>(message: S) -> Self
-    where
-        S: Into<String>,
-    {
-        Error::new(ErrorKind::Renderer, message)
-    }
-
-    pub(crate) fn theme<S>(message: S) -> Self
-    where
-        S: Into<String>,
-    {
-        Error::new(ErrorKind::Theme, message)
-    }
-
-    pub(crate) fn store<S>(message: S) -> Error
-    where
-        S: Into<String>,
-    {
-        Error::new(ErrorKind::Store, message)
-    }
 }
 
-impl fmt::Display for Error {
+impl<T> fmt::Display for Error<T>
+where
+    T: fmt::Debug + fmt::Display + Sync + Send,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Jilo Error")?;
-        writeln!(f, "Kind {}", self.kind)?;
-        writeln!(f, "Error is :")?;
-        writeln!(f, "{}", self.message)?;
-
-        Ok(())
+        writeln!(f, "jilo error - {}", self.kind)
     }
 }
 
-impl error::Error for Error {}
-
-impl From<std::io::Error> for Error {
-    fn from(io_error: std::io::Error) -> Self {
-        Error::theme(format!("A IO error occured: {}", io_error))
+impl<T> StdError for Error<T>
+where
+    T: fmt::Debug + fmt::Display + Sync + Send,
+{
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match self.source {
+            Some(ref error) => Some(error.as_ref()),
+            None => None,
+        }
     }
 }
 
-impl From<glob::GlobError> for Error {
-    fn from(glob_error: glob::GlobError) -> Self {
-        Error::theme(format!("A Glob error occured: {}", glob_error))
-    }
-}
+// Theme errors variants
 
-impl From<serde_yaml::Error> for Error {
-    fn from(yaml_error: serde_yaml::Error) -> Self {
-        Error::store(format!("A Serde Yaml error occured: {}", yaml_error))
-    }
-}
+display_enum!(ThemeErrorKind, {
+    ParsePathError => "could not convert path into valid utf8",
+    CanonicalError => "no valid canonical path",
+    ThemeParseError => "could not find relative path to theme"
+});
+
+pub type ThemeError = Error<ThemeErrorKind>;
+
+display_enum!(SiteErrorKind, {
+    PageRenderError => "page could not be rendered"
+});
+
+pub type SiteError = Error<SiteErrorKind>;
+
+display_enum!(RenderErrorKind, {
+    LoadError => "unable to load theme into render engine",
+    RenderModuleError => "render failed"
+});
+
+pub type RenderError = Error<RenderErrorKind>;
+
+display_enum!(StoreErrorKind, {
+    SummaryError => "could not find all pages",
+    LoadPageError => "page could not be loaded",
+    PersistError => "unable to save pages",
+    IoError => "could not open file"
+});
+
+pub type StoreError = Error<StoreErrorKind>;

@@ -2,7 +2,11 @@ use std::{collections::HashMap, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Result, store::Store, Render, Theme};
+use crate::{
+    error::{RenderError, SiteError, SiteErrorKind, StoreError},
+    store::Store,
+    Render, Theme,
+};
 
 pub struct Site<S, R>
 where
@@ -27,15 +31,28 @@ where
         }
     }
 
-    pub fn render_page<I>(&mut self, name: I) -> Result<String>
+    pub fn render_page<I>(&mut self, name: I) -> Result<String, SiteError>
     where
         I: Into<String>,
     {
         let name = name.into();
-        let page = self.storage.load_page(&name)?;
+        let page = self.storage.get_page_by_name(&name)?;
         self.renderer.load(&self.theme)?;
 
-        self.renderer.render_module(&page)
+        let html = self.renderer.render_module(&page)?;
+        Ok(html)
+    }
+}
+
+impl From<RenderError> for SiteError {
+    fn from(render_error: RenderError) -> Self {
+        SiteError::with(SiteErrorKind::PageRenderError, render_error)
+    }
+}
+
+impl From<StoreError> for SiteError {
+    fn from(store_error: StoreError) -> Self {
+        SiteError::with(SiteErrorKind::PageRenderError, store_error)
     }
 }
 
