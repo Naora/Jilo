@@ -1,5 +1,3 @@
-#[macro_use]
-mod utils;
 mod error;
 mod renderer;
 mod site;

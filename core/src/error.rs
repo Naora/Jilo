@@ -1,82 +1,61 @@
 use std::{error::Error as StdError, fmt};
 
+pub type Result<T> = std::result::Result<T, ErrorA>;
+
 #[derive(Debug)]
-pub struct Error<T>
-where
-    T: fmt::Debug + fmt::Display + Sync + Send,
-{
-    kind: T,
-    source: Option<Box<dyn StdError + Sync + Send>>,
+pub enum ErrorA {
+    EmptySummary,
+    InvalidValue,
+    Serde(serde_yaml::Error),
+    Io(std::io::Error),
+    Tera(tera::Error),
+    ParseTheme,
 }
 
-impl<T> Error<T>
-where
-    T: fmt::Debug + fmt::Display + Sync + Send,
-{
-    pub fn new(kind: T) -> Self {
-        Self { kind, source: None }
-    }
-
-    pub fn with<S>(kind: T, source: S) -> Self
-    where
-        S: StdError + 'static + Sync + Send,
-    {
-        Self {
-            kind,
-            source: Some(Box::new(source)),
-        }
-    }
-}
-
-impl<T> fmt::Display for Error<T>
-where
-    T: fmt::Debug + fmt::Display + Sync + Send,
-{
+impl fmt::Display for ErrorA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "jilo error - {}", self.kind)
-    }
-}
-
-impl<T> StdError for Error<T>
-where
-    T: fmt::Debug + fmt::Display + Sync + Send,
-{
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        match self.source {
-            Some(ref error) => Some(error.as_ref()),
-            None => None,
+        match *self {
+            ErrorA::EmptySummary => write!(f, "no page found"),
+            ErrorA::Io(..) => write!(f, "the file could not be open"),
+            ErrorA::InvalidValue => write!(f, "value could not be determined"),
+            ErrorA::Serde(_) => write!(f, "a serde error occured"),
+            ErrorA::Tera(_) => write!(f, "a tera error occured"),
+            ErrorA::ParseTheme => write!(f, "theme is not able to be parsed"),
         }
     }
 }
 
-// Theme errors variants
+impl StdError for ErrorA {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match *self {
+            ErrorA::Io(ref error) => Some(error),
+            ErrorA::Serde(ref error) => Some(error),
+            ErrorA::Tera(ref error) => Some(error),
+            _ => None,
+        }
+    }
+}
 
-display_enum!(ThemeErrorKind, {
-    ParsePathError => "could not convert path into valid utf8",
-    CanonicalError => "no valid canonical path",
-    ThemeParseError => "could not find relative path to theme"
-});
+impl From<serde_yaml::Error> for ErrorA {
+    fn from(serde_error: serde_yaml::Error) -> Self {
+        ErrorA::Serde(serde_error)
+    }
+}
 
-pub type ThemeError = Error<ThemeErrorKind>;
+impl From<std::io::Error> for ErrorA {
+    fn from(io_error: std::io::Error) -> Self {
+        ErrorA::Io(io_error)
+    }
+}
 
-display_enum!(SiteErrorKind, {
-    PageRenderError => "page could not be rendered"
-});
+impl From<tera::Error> for ErrorA {
+    fn from(tera_error: tera::Error) -> Self {
+        ErrorA::Tera(tera_error)
+    }
+}
 
-pub type SiteError = Error<SiteErrorKind>;
-
-display_enum!(RenderErrorKind, {
-    LoadError => "unable to load theme into render engine",
-    RenderModuleError => "render failed"
-});
-
-pub type RenderError = Error<RenderErrorKind>;
-
-display_enum!(StoreErrorKind, {
-    SummaryError => "could not find all pages",
-    LoadPageError => "page could not be loaded",
-    PersistError => "unable to save pages",
-    IoError => "could not open file"
-});
-
-pub type StoreError = Error<StoreErrorKind>;
+impl From<glob::GlobError> for ErrorA {
+    fn from(glob_error: glob::GlobError) -> Self {
+        ErrorA::Io(glob_error.into_error())
+    }
+}

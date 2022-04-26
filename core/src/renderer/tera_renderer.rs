@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use tera::{self, Context};
 
-use crate::{
-    error::{RenderError, RenderErrorKind},
-    Module, Render, Theme, Value,
-};
+use crate::{error::Result, Module, Render, Theme, Value};
 
 #[derive(Debug)]
 pub struct TeraRenderer {
@@ -45,7 +42,7 @@ impl Default for TeraRenderer {
 }
 
 impl Render for TeraRenderer {
-    fn load(&mut self, theme: &Theme) -> Result<(), RenderError> {
+    fn load(&mut self, theme: &Theme) -> Result<()> {
         for (name, page) in &theme.templates {
             self.tera.add_template_file(&page.view, Some(name))?;
         }
@@ -53,7 +50,7 @@ impl Render for TeraRenderer {
         Ok(())
     }
 
-    fn render_module(&mut self, module: &Module) -> Result<String, RenderError> {
+    fn render_module(&mut self, module: &Module) -> Result<String> {
         let mut context = Context::from(module);
         for (name, modules) in &module.areas {
             let mut area_html = String::new();
@@ -66,11 +63,5 @@ impl Render for TeraRenderer {
 
         let html = self.tera.render(&module.template, &context)?;
         Ok(html)
-    }
-}
-
-impl From<tera::Error> for RenderError {
-    fn from(tera_error: tera::Error) -> Self {
-        RenderError::with(RenderErrorKind::RenderModuleError, tera_error)
     }
 }

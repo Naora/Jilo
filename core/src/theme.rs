@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs, path::PathBuf};
 
 use serde::Deserialize;
 
-use crate::error::{ThemeError, ThemeErrorKind::*};
+use crate::error::{ErrorA, Result};
 
 impl From<&PathBuf> for Template {
     fn from(path_buf: &PathBuf) -> Self {
@@ -63,23 +63,23 @@ pub struct Theme {
 
 // TODO: Change logic and use something else then OsStr for templates...
 impl TryFrom<&PathBuf> for Theme {
-    type Error = ThemeError;
+    type Error = ErrorA;
 
-    fn try_from(base_path: &PathBuf) -> Result<Self, Self::Error> {
+    fn try_from(base_path: &PathBuf) -> Result<Self> {
         let mut templates = HashMap::new();
 
         let canonical = get_canonical(base_path)?;
 
         let pattern = format!("{}{}", canonical, "/**/index.yaml");
-        for entry in glob::glob(&pattern)? {
+        for entry in glob::glob(&pattern).unwrap() {
             let mut path = entry?;
             let template = Template::from(&path);
             path.pop();
             let parent_canonical = get_canonical(&path)?;
-            let name = match parent_canonical.split(&canonical).last() {
-                Some(str) => str,
-                None => return Err(ThemeError::new(ThemeParseError)),
-            };
+            let name = parent_canonical
+                .split(&canonical)
+                .last()
+                .ok_or(ErrorA::ParseTheme)?;
             templates.insert(name.to_string(), template);
         }
 
@@ -87,31 +87,10 @@ impl TryFrom<&PathBuf> for Theme {
     }
 }
 
-fn get_canonical(path: &PathBuf) -> Result<String, ThemeError> {
+fn get_canonical(path: &PathBuf) -> Result<String> {
     let canonical = path.canonicalize()?;
-    let canonical = match canonical.to_str() {
-        Some(str) => str,
-        None => return Err(ThemeError::new(ParsePathError)),
-    };
+    let canonical = canonical.to_str().ok_or(ErrorA::ParseTheme)?;
     Ok(canonical.to_string())
-}
-
-impl From<glob::GlobError> for ThemeError {
-    fn from(glob_error: glob::GlobError) -> Self {
-        ThemeError::with(ParsePathError, glob_error)
-    }
-}
-
-impl From<glob::PatternError> for ThemeError {
-    fn from(pattern_error: glob::PatternError) -> Self {
-        ThemeError::with(ParsePathError, pattern_error)
-    }
-}
-
-impl From<std::io::Error> for ThemeError {
-    fn from(io_error: std::io::Error) -> Self {
-        ThemeError::with(CanonicalError, io_error)
-    }
 }
 
 #[cfg(test)]
