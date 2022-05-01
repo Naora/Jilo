@@ -15,9 +15,7 @@ fn create_page() {
     let summary = site.summary();
 
     assert_eq!(summary.len(), 1);
-    assert_eq!(&summary[0].name, "first section");
+    assert_eq!(&summary[0], "first section");
 
-    let result = site.render_page("first section").unwrap();
-    assert!(result.contains("<html lang=\"en\">"));
-    assert!(result.contains("<span>Hello Henry</span>"));
+    site.delete_page("first section").unwrap();
 }

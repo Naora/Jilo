@@ -9,6 +9,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use module::Module;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -42,6 +43,16 @@ impl Site {
         let module = self.theme.get_module_defaults(template)?;
         let mut storage_lock = self.storage.lock().unwrap();
         Ok(storage_lock.create_page(name, module)?)
+    }
+
+    pub fn delete_page(&mut self, name: &str) -> Result<Module> {
+        let mut storage_lock = self.storage.lock().unwrap();
+        storage_lock.delete_page(name)
+    }
+
+    pub fn summary(&self) -> Vec<String> {
+        let storage_lock = self.storage.lock().unwrap();
+        storage_lock.summary()
     }
 
     pub fn render_page(&mut self, name: &str) -> Result<String> {

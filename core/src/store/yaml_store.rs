@@ -53,8 +53,11 @@ impl YamlStorage {
 }
 
 impl Store for YamlStorage {
-    fn summary(&self) -> Result<Vec<String>> {
-        todo!()
+    fn summary(&self) -> Vec<String> {
+        self.pages
+            .iter()
+            .map(|(name, ..)| name.to_owned())
+            .collect()
     }
 
     fn get_pages(&self) -> Result<HashMap<String, Module>> {
@@ -81,6 +84,19 @@ impl Store for YamlStorage {
         serde_yaml::to_writer(file, &module)?;
         self.pages.insert(name.to_owned(), id);
         Ok(())
+    }
+
+    fn delete_page(&mut self, name: &str) -> Result<Module> {
+        if let Some(id) = self.pages.get(name) {
+            let path = self.get_file(id);
+            let file = fs::File::open(&path)?;
+            let module = serde_yaml::from_reader(file)?;
+            fs::remove_file(path)?;
+
+            return Ok(module);
+        } else {
+            Err(Error::PageNotFound)
+        }
     }
 }
 
