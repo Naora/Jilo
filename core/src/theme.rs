@@ -2,7 +2,10 @@ use std::{collections::HashMap, fs, path::PathBuf};
 
 use serde::Deserialize;
 
-use crate::error::{ErrorA, Result};
+use crate::{
+    error::{Error, Result},
+    module::Module,
+};
 
 impl From<&PathBuf> for Template {
     fn from(path_buf: &PathBuf) -> Self {
@@ -44,7 +47,7 @@ pub struct Template {
 #[serde(rename_all = "snake_case")]
 pub enum Field {
     String,
-    Integer,
+    Number,
     Boolean,
 }
 
@@ -61,11 +64,9 @@ pub struct Theme {
     pub templates: HashMap<String, Template>,
 }
 
-// TODO: Change logic and use something else then OsStr for templates...
-impl TryFrom<&PathBuf> for Theme {
-    type Error = ErrorA;
-
-    fn try_from(base_path: &PathBuf) -> Result<Self> {
+impl Theme {
+    // TODO: Change logic and use something else then OsStr for templates...
+    pub(crate) fn from_folder(base_path: &PathBuf) -> Result<Self> {
         let mut templates = HashMap::new();
 
         let canonical = get_canonical(base_path)?;
@@ -79,27 +80,54 @@ impl TryFrom<&PathBuf> for Theme {
             let name = parent_canonical
                 .split(&canonical)
                 .last()
-                .ok_or(ErrorA::ParseTheme)?;
+                .ok_or(Error::ParseTheme)?;
             templates.insert(name.to_string(), template);
         }
 
         Ok(Self { templates })
     }
+
+    pub(crate) fn get_module_defaults(&self, template_name: &str) -> Result<Module> {
+        let template = self
+            .templates
+            .get(template_name)
+            .ok_or(Error::TemplateNotFound)?;
+
+        let fields = template
+            .fields
+            .iter()
+            .map(|(name, field)| (name.to_owned(), field.into()))
+            .collect();
+
+        let areas = template
+            .areas
+            .iter()
+            .map(|(name, _)| (name.to_owned(), vec![]))
+            .collect();
+
+        Ok(Module {
+            template: template_name.to_string(),
+            fields,
+            areas,
+        })
+    }
 }
 
 fn get_canonical(path: &PathBuf) -> Result<String> {
     let canonical = path.canonicalize()?;
-    let canonical = canonical.to_str().ok_or(ErrorA::ParseTheme)?;
+    let canonical = canonical.to_str().ok_or(Error::ParseTheme)?;
     Ok(canonical.to_string())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    mod theme {
+        use crate::theme::Template;
+        use std::path::PathBuf;
 
-    #[test]
-    fn create_new_template() {
-        let template_data = r#"
+        #[test]
+        fn create_new_template() {
+            let template_data = r#"
 --- 
 view: view.html
 fields: 
@@ -117,10 +145,11 @@ areas:
     accept: all
         "#;
 
-        let template = Template::from(template_data);
+            let template = Template::from(template_data);
 
-        assert_eq!(template.view, PathBuf::from("view.html"));
-        assert_eq!(template.fields.len(), 1);
-        assert_eq!(template.areas.len(), 3);
+            assert_eq!(template.view, PathBuf::from("view.html"));
+            assert_eq!(template.fields.len(), 1);
+            assert_eq!(template.areas.len(), 3);
+        }
     }
 }

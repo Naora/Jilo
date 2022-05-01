@@ -1,14 +1,7 @@
 use actix_web::{http::Method, web, HttpResponse};
 
-use crate::utils::Response;
-
-async fn show_all_pages(data: web::Data<super::AppState>) -> HttpResponse {
-    let response = match data.storage.summary() {
-        Ok(summary) => Response::success(summary),
-        Err(error) => Response::error(error.to_string()),
-    };
-
-    HttpResponse::Ok().json(response)
+async fn show_all_pages() -> HttpResponse {
+    HttpResponse::Ok().json("response")
 }
 
 async fn get_pages_options() -> HttpResponse {

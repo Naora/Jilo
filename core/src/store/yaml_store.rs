@@ -1,144 +1,136 @@
 use std::{
     collections::HashMap,
     fs,
-    path::{self},
+    path::{Path, PathBuf},
 };
 
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::{ErrorA, Result},
-    Module, Store, Value,
+    error::{Error, Result},
+    module::Module,
+    store::Store,
 };
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct YamlStorage {
-    base_path: String,
+    folder: PathBuf,
+    pages: HashMap<String, String>,
 }
 
 impl YamlStorage {
-    pub fn new<I>(base_path: I) -> Self
+    pub fn new(folder: PathBuf) -> Self {
+        Self {
+            folder: folder,
+            pages: HashMap::new(),
+        }
+    }
+
+    pub fn from_file<P>(storage_file: P) -> Result<YamlStorage>
     where
-        I: Into<String>,
+        P: AsRef<Path>,
     {
-        let base_path = base_path.into();
-        Self { base_path }
+        let file = fs::File::open(storage_file)?;
+        Ok(serde_yaml::from_reader(file)?)
     }
 
-    fn get_all_pages(&self) -> Result<HashMap<String, YamlPage>> {
-        let mut data = HashMap::new();
-        let pattern = format!("{}{}", self.base_path, "/**/*.yml");
-        for entry in glob::glob(&pattern).unwrap() {
-            let entry = entry?;
-            let page = self.load_file(&entry).expect("Could not retrieve file");
-            let file_name = entry.file_name().unwrap();
-            let file_name = file_name.to_str().unwrap();
-            let extention = entry.extension().unwrap();
-            let extention = extention.to_str().unwrap();
-            let name = file_name.trim_end_matches(extention);
-            data.insert(name.to_string(), page);
-        }
-        Ok(data)
-    }
-
-    fn load_file<P>(&self, path: P) -> Result<YamlPage>
+    fn get_uid<T>(&self, generator: &mut T) -> String
     where
-        P: AsRef<path::Path>,
+        T: IdGenerator,
     {
-        let file = fs::File::open(path)?;
-        let data = serde_yaml::from_reader(file)?;
+        let new_id = generator.generate_id();
 
-        Ok(data)
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct YamlPage {
-    name: String,
-    template: String,
-    fields: serde_yaml::Mapping,
-    areas: Option<serde_yaml::Mapping>,
-}
-
-impl YamlPage {
-    fn get_fields(&self) -> Result<HashMap<String, Value>> {
-        let mut fields = HashMap::new();
-        for (key, value) in &self.fields {
-            let name = key.as_str().unwrap().to_owned();
-            let field_value = Value::try_from(value)?;
-            fields.insert(name, field_value);
+        match self.pages.iter().find(|(_, value)| *value == &new_id) {
+            Some(..) => generator.generate_id(),
+            None => new_id,
         }
-        Ok(fields)
     }
 
-    fn get_areas(&self) -> Result<HashMap<String, Vec<Module>>> {
-        let mut areas = HashMap::new();
-        if let Some(mappings) = &self.areas {
-            for (key, value) in mappings {
-                if let serde_yaml::Value::Sequence(sequence) = value {
-                    let name = key.as_str().unwrap().to_owned();
-                    let mut modules = vec![];
-                    for value in sequence {
-                        let areas: YamlPage = serde_yaml::from_value(value.clone())?;
-                        modules.push(areas.as_module()?);
-                    }
-                    areas.insert(name, modules);
-                }
-            }
-        }
-        Ok(areas)
-    }
-
-    fn as_module(&self) -> Result<Module> {
-        let mut module = Module::new(&self.template);
-        module.fields = self.get_fields()?;
-        module.areas = self.get_areas()?;
-        Ok(module)
+    fn get_file(&self, id: &str) -> PathBuf {
+        self.folder.join(format!("{}.yml", &id))
     }
 }
 
 impl Store for YamlStorage {
     fn summary(&self) -> Result<Vec<String>> {
-        Err(ErrorA::EmptySummary)
+        todo!()
     }
 
     fn get_pages(&self) -> Result<HashMap<String, Module>> {
-        let data = self.get_all_pages()?;
-
         let mut pages = HashMap::new();
-        for (name, page) in data {
-            let template = page.as_module()?;
-            pages.insert(name, template);
+        for (name, file_name) in &self.pages {
+            let file = fs::File::open(self.folder.join(file_name))?;
+            let template: Module = serde_yaml::from_reader(file)?;
+            //let template = page.as_module()?;
+            pages.insert(name.to_owned(), template);
         }
 
         Ok(pages)
     }
 
     fn get_page_by_name(&self, name: &String) -> Result<Module> {
-        let path = format!("{}/{}.yml", self.base_path, name);
-        let page_data = self.load_file(path)?;
-
-        page_data.as_module()
+        let id = self.pages.get(name).ok_or(Error::PageNotFound)?;
+        let file = fs::File::open(self.get_file(&id))?;
+        Ok(serde_yaml::from_reader(file)?)
     }
 
-    fn persist(&self, _: HashMap<String, Module>) {
-        todo!()
+    fn create_page(&mut self, name: &str, module: Module) -> Result<()> {
+        let id = self.get_uid(&mut Random::default());
+        let file = fs::File::create(self.get_file(&id))?;
+        serde_yaml::to_writer(file, &module)?;
+        self.pages.insert(name.to_owned(), id);
+        Ok(())
     }
 }
 
-impl TryFrom<&serde_yaml::Value> for Value {
-    type Error = ErrorA;
+trait IdGenerator {
+    fn generate_id(&mut self) -> String;
+}
 
-    fn try_from(value: &serde_yaml::Value) -> Result<Self> {
-        let field_value = match value {
-            serde_yaml::Value::Bool(val) => Value::Boolean(val.clone()),
-            serde_yaml::Value::Number(val) => {
-                let value = val.as_i64().unwrap().try_into().unwrap();
-                Value::Integer(value)
+#[derive(Debug, Default)]
+struct Random {}
+
+impl IdGenerator for Random {
+    fn generate_id(&mut self) -> String {
+        rand::thread_rng()
+            .sample_iter(&rand::distributions::Alphanumeric)
+            .take(30)
+            .map(char::from)
+            .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    mod id_generator {
+        use super::super::*;
+
+        struct SimpleId {
+            pub count: usize,
+        }
+
+        impl IdGenerator for SimpleId {
+            fn generate_id(&mut self) -> String {
+                self.count += 1;
+                self.count.to_string()
             }
-            serde_yaml::Value::String(val) => Value::String(val.clone()),
-            _ => return Err(ErrorA::InvalidValue),
-        };
+        }
 
-        Ok(field_value)
+        #[test]
+        fn generate_ids() {
+            let mut storage = YamlStorage::new("/home".into());
+            let mut generator = SimpleId { count: 0 };
+            let id = storage.get_uid(&mut generator);
+
+            assert_eq!(&id, "1");
+
+            storage.pages.insert("first".to_string(), id);
+            generator.count = 0;
+
+            let id = storage.get_uid(&mut generator);
+
+            assert_eq!(&id, "2");
+        }
     }
 }

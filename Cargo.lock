@@ -427,6 +427,7 @@ name = "core"
 version = "0.1.0"
 dependencies = [
  "glob",
+ "rand",
  "serde",
  "serde_yaml",
  "tera",

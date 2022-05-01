@@ -2,7 +2,12 @@ use std::collections::HashMap;
 
 use tera::{self, Context};
 
-use crate::{error::Result, Module, Render, Theme, Value};
+use crate::{
+    error::Result,
+    module::{Module, Value},
+    renderer::Render,
+    theme::Theme,
+};
 
 #[derive(Debug)]
 pub struct TeraRenderer {
@@ -16,7 +21,7 @@ impl From<&Module> for tera::Context {
         for (name, value) in &module.fields {
             match value {
                 Value::String(val) => context.insert(name, val),
-                Value::Integer(val) => context.insert(name, val),
+                Value::Number(val) => context.insert(name, val),
                 Value::Boolean(val) => context.insert(name, val),
             };
         }
@@ -24,19 +29,26 @@ impl From<&Module> for tera::Context {
     }
 }
 
-struct AreaFunc;
+struct AreaFilter;
 
-impl tera::Function for AreaFunc {
-    fn call(&self, args: &HashMap<String, tera::Value>) -> tera::Result<tera::Value> {
-        println!("{:?}", args);
-        Ok(tera::to_value("this is a value").unwrap())
+impl tera::Filter for AreaFilter {
+    fn filter(
+        &self,
+        value: &tera::Value,
+        _: &HashMap<String, tera::Value>,
+    ) -> tera::Result<tera::Value> {
+        Ok(value.to_owned())
+    }
+
+    fn is_safe(&self) -> bool {
+        true
     }
 }
 
 impl Default for TeraRenderer {
     fn default() -> Self {
         let mut tera: tera::Tera = Default::default();
-        tera.register_function("area", AreaFunc);
+        tera.register_filter("area", AreaFilter);
         Self { tera }
     }
 }

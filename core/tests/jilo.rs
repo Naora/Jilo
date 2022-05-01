@@ -1,39 +1,23 @@
-use core::{self, tera_renderer::TeraRenderer, yaml_store::YamlStorage, Site, SiteBuilder, Store};
-use std::path::PathBuf;
-
-fn init() -> Site<YamlStorage, TeraRenderer> {
-    let renderer = TeraRenderer::default();
-    let storage = YamlStorage::new("./tests/test_site/data");
-
-    SiteBuilder::new()
-        .theme(&PathBuf::from("./tests/test_site/theme"))
-        .renderer(renderer)
-        .storage(storage)
-        .build()
-}
+use core::{self, SiteBuilder};
 
 #[test]
-fn render_pages() {
-    let mut site = init();
+fn create_page() {
+    let mut site = SiteBuilder::new()
+        .add_tera_renderer()
+        .unwrap()
+        .add_yaml_storage("./tests/test_site/data")
+        .unwrap()
+        .add_theme("./tests/test_site/theme")
+        .unwrap()
+        .build();
 
-    let result = site.render_page("first_article").unwrap();
-    assert!(result.contains("<html lang=\"en\">"));
-    assert!(result.contains("<title>A Jilo Title</title>"));
-}
+    site.create_page("first section", "/pages/section").unwrap();
+    let summary = site.summary();
 
-#[test]
-fn render_pages_with_areas() {
-    let mut site = init();
+    assert_eq!(summary.len(), 1);
+    assert_eq!(&summary[0].name, "first section");
 
-    let result = site.render_page("first_section").unwrap();
+    let result = site.render_page("first section").unwrap();
     assert!(result.contains("<html lang=\"en\">"));
     assert!(result.contains("<span>Hello Henry</span>"));
-}
-
-#[test]
-fn create_pages() {
-    let storage = YamlStorage::new("./tests/test_site/yaml_storage.yml");
-    let pages = storage.summary().unwrap();
-    dbg!(pages);
-    assert!(false);
 }
