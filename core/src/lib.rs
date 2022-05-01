@@ -39,13 +39,13 @@ impl Site {
         }
     }
 
-    pub fn create_page(&mut self, name: &str, template: &str) -> Result<()> {
+    pub fn create_page(&self, name: &str, template: &str) -> Result<()> {
         let module = self.theme.get_module_defaults(template)?;
         let mut storage_lock = self.storage.lock().unwrap();
         Ok(storage_lock.create_page(name, module)?)
     }
 
-    pub fn delete_page(&mut self, name: &str) -> Result<Module> {
+    pub fn delete_page(&self, name: &str) -> Result<Module> {
         let mut storage_lock = self.storage.lock().unwrap();
         storage_lock.delete_page(name)
     }
@@ -55,7 +55,7 @@ impl Site {
         storage_lock.summary()
     }
 
-    pub fn render_page(&mut self, name: &str) -> Result<String> {
+    pub fn render_page(&self, name: &str) -> Result<String> {
         let storage_lock = self.storage.lock().unwrap();
         let page = storage_lock.get_page_by_name(&name.to_string())?;
         let mut renderer_lock = self.renderer.lock().unwrap();
@@ -106,8 +106,8 @@ impl SiteBuilder {
         Ok(self)
     }
 
-    pub fn add_theme(mut self, base_path: &str) -> Result<Self> {
-        self.theme = Some(Theme::from_folder(&PathBuf::from(base_path))?);
+    pub fn add_theme(mut self, path: &str) -> Result<Self> {
+        self.theme = Some(Theme::from_folder(&PathBuf::from(path))?);
         Ok(self)
     }
 

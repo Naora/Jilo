@@ -65,7 +65,6 @@ impl Store for YamlStorage {
         for (name, file_name) in &self.pages {
             let file = fs::File::open(self.folder.join(file_name))?;
             let template: Module = serde_yaml::from_reader(file)?;
-            //let template = page.as_module()?;
             pages.insert(name.to_owned(), template);
         }
 
