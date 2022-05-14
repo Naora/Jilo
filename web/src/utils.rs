@@ -12,7 +12,6 @@ where
     T: Serialize,
 {
     pub(crate) data: Option<T>,
-    pub(crate) error: Option<String>,
     pub(crate) links: Vec<Link>,
 }
 
@@ -23,18 +22,6 @@ where
     pub(crate) fn success(data: T) -> Self {
         Self {
             data: Some(data),
-            error: None,
-            links: vec![],
-        }
-    }
-
-    pub(crate) fn error<I>(error: I) -> Self
-    where
-        I: Into<String>,
-    {
-        Self {
-            data: None,
-            error: Some(error.into()),
             links: vec![],
         }
     }

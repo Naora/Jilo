@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "jilo spa",
   "scripts": {
-    "build": "elm make src/Main.elm --output=public/main.js",
+    "build": "elm make src/Main.elm --output=public/assets/main.js",
     "elm": "elm"
   },
   "keywords": [

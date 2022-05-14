@@ -1,7 +1,7 @@
-use core::Site;
-
 use actix_web::{http::Method, web, HttpResponse};
 use serde::Deserialize;
+
+use crate::utils::Response;
 
 use super::AppState;
 
@@ -13,7 +13,8 @@ struct PageData {
 
 async fn show_all_pages(state: web::Data<AppState>) -> HttpResponse {
     let summary = state.site.summary();
-    HttpResponse::Ok().json(summary)
+    let response = Response::success(summary);
+    HttpResponse::Ok().json(response)
 }
 
 async fn get_pages_options() -> HttpResponse {
