@@ -3,21 +3,17 @@ module Main exposing (main)
 import Browser exposing (Document)
 import Browser.Navigation as Nav
 import Html exposing (..)
+import Html.Attributes exposing (href)
 import Pages.Login as Login
-import Route exposing (Route)
+import Pages.NotFound as NotFound
+import Router exposing (..)
+import Session exposing (..)
 import Url exposing (Url)
 
 
-type Page
-    = NotFoundPage
-    | LoginPage Login.Model
-
-
-type alias Model =
-    { route : Route
-    , page : Page
-    , navKey : Nav.Key
-    }
+type Model
+    = NotFoundPage Session
+    | LoginPage Session Login.Model
 
 
 type Msg
@@ -33,64 +29,62 @@ type alias Flags =
 init : Flags -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url navKey =
     let
-        model =
-            { route = Route.toRoute url
-            , page = NotFoundPage
-            , navKey = navKey
-            }
+        session =
+            Session navKey "Koko" 19
     in
-    initCurrentPage ( model, Cmd.none )
+    intoPage url (NotFoundPage session)
 
 
-initCurrentPage : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-initCurrentPage ( model, existingCmds ) =
+intoPage : Url.Url -> Model -> ( Model, Cmd Msg )
+intoPage url model =
     let
-        ( currentPage, mappedPageCmds ) =
-            case model.route of
-                Route.NotFound ->
-                    ( NotFoundPage, Cmd.none )
-
-                Route.Login ->
-                    let
-                        ( pageModel, pageCmds ) =
-                            Login.init
-                    in
-                    ( LoginPage pageModel, Cmd.map GotLoginMsg pageCmds )
-
-                Route.Dashboard ->
-                    let
-                        ( pageModel, pageCmds ) =
-                            Login.init
-                    in
-                    ( LoginPage pageModel, Cmd.map GotLoginMsg pageCmds )
+        session =
+            toSession model
     in
-    ( { model | page = currentPage }
-    , Cmd.batch [ existingCmds, mappedPageCmds ]
-    )
+    case toRoute url of
+        Login ->
+            let
+                ( pageModel, pageCmds ) =
+                    Login.init session "Login"
+            in
+            ( LoginPage session pageModel, Cmd.map GotLoginMsg pageCmds )
+
+        Dashboard ->
+            let
+                ( pageModel, pageCmds ) =
+                    Login.init session "Dashboard"
+            in
+            ( LoginPage session pageModel, Cmd.map GotLoginMsg pageCmds )
+
+        NotFound ->
+            ( NotFoundPage session, Cmd.none )
 
 
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+toSession : Model -> Session
+toSession model =
+    case model of
+        LoginPage session _ ->
+            session
+
+        NotFoundPage session ->
+            session
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case ( msg, model.page ) of
-        ( GotLoginMsg subMsg, LoginPage pageModel ) ->
-            let
-                ( updatedPageModel, updatedCmd ) =
-                    Login.update subMsg pageModel
-            in
-            ( { model | page = LoginPage updatedPageModel }
-            , Cmd.map GotLoginMsg updatedCmd
-            )
+    case msg of
+        GotLoginMsg loginMsg ->
+            handleLoginMsg loginMsg model
 
-        ( UrlRequested urlRequest, _ ) ->
+        UrlRequested urlRequest ->
+            let
+                session =
+                    toSession model
+            in
             case urlRequest of
                 Browser.Internal url ->
                     ( model
-                    , Nav.pushUrl model.navKey (Url.toString url)
+                    , Nav.pushUrl session.navKey (Url.toString url)
                     )
 
                 Browser.External url ->
@@ -98,31 +92,60 @@ update msg model =
                     , Nav.load url
                     )
 
-        ( _, _ ) ->
+        UrlChanged url ->
+            intoPage url model
+
+
+handleLoginMsg : Login.Msg -> Model -> ( Model, Cmd Msg )
+handleLoginMsg subMsg model =
+    case model of
+        LoginPage _ pageModel ->
+            let
+                ( updatedPageModel, updatedCmd ) =
+                    Login.update subMsg pageModel
+            in
+            ( LoginPage updatedPageModel.session updatedPageModel
+            , Cmd.map GotLoginMsg updatedCmd
+            )
+
+        _ ->
             ( model, Cmd.none )
 
 
 view : Model -> Document Msg
 view model =
     { title = "Jilo"
-    , body = [ viewer model ]
+    , body = [ appHeader (toSession model), viewer model ]
     }
+
+
+appHeader : Session -> Html msg
+appHeader session =
+    header []
+        [ nav []
+            [ ul []
+                [ li [] [ a [ href "/" ] [ text "home" ] ]
+                , li [] [ a [ href "/login" ] [ text "login" ] ]
+                , li [] [ a [ href "/user" ] [ text session.user ] ]
+                ]
+            ]
+        ]
 
 
 viewer : Model -> Html Msg
 viewer model =
-    case model.page of
-        NotFoundPage ->
-            notFoundView
+    case model of
+        NotFoundPage _ ->
+            NotFound.view
 
-        LoginPage pageModel ->
+        LoginPage _ pageModel ->
             Login.view pageModel
                 |> Html.map GotLoginMsg
 
 
-notFoundView : Html msg
-notFoundView =
-    h3 [] [ text "Oops! The page you requested was not found!" ]
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
 
 
 main : Program () Model Msg
