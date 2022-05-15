@@ -4,7 +4,6 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
 import Session exposing (..)
-import String exposing (length)
 
 
 type Msg

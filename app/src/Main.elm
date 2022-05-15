@@ -11,9 +11,15 @@ import Session exposing (..)
 import Url exposing (Url)
 
 
-type Model
-    = NotFoundPage Session
-    | LoginPage Session Login.Model
+type Page
+    = NotFoundPage
+    | LoginPage Login.Model
+
+
+type alias Model =
+    { session : Session
+    , page : Page
+    }
 
 
 type Msg
@@ -32,42 +38,28 @@ init _ url navKey =
         session =
             Session navKey "Koko" 19
     in
-    intoPage url (NotFoundPage session)
+    intoPage url (Model session NotFoundPage)
 
 
 intoPage : Url.Url -> Model -> ( Model, Cmd Msg )
 intoPage url model =
-    let
-        session =
-            toSession model
-    in
     case toRoute url of
         Login ->
             let
                 ( pageModel, pageCmds ) =
-                    Login.init session "Login"
+                    Login.init model.session "Login"
             in
-            ( LoginPage session pageModel, Cmd.map GotLoginMsg pageCmds )
+            ( { model | page = LoginPage pageModel }, Cmd.map GotLoginMsg pageCmds )
 
         Dashboard ->
             let
                 ( pageModel, pageCmds ) =
-                    Login.init session "Dashboard"
+                    Login.init model.session "Dashboard"
             in
-            ( LoginPage session pageModel, Cmd.map GotLoginMsg pageCmds )
+            ( { model | page = LoginPage pageModel }, Cmd.map GotLoginMsg pageCmds )
 
         NotFound ->
-            ( NotFoundPage session, Cmd.none )
-
-
-toSession : Model -> Session
-toSession model =
-    case model of
-        LoginPage session _ ->
-            session
-
-        NotFoundPage session ->
-            session
+            ( { model | page = NotFoundPage }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -77,14 +69,10 @@ update msg model =
             handleLoginMsg loginMsg model
 
         UrlRequested urlRequest ->
-            let
-                session =
-                    toSession model
-            in
             case urlRequest of
                 Browser.Internal url ->
                     ( model
-                    , Nav.pushUrl session.navKey (Url.toString url)
+                    , Nav.pushUrl model.session.navKey (Url.toString url)
                     )
 
                 Browser.External url ->
@@ -98,13 +86,13 @@ update msg model =
 
 handleLoginMsg : Login.Msg -> Model -> ( Model, Cmd Msg )
 handleLoginMsg subMsg model =
-    case model of
-        LoginPage _ pageModel ->
+    case model.page of
+        LoginPage pageModel ->
             let
                 ( updatedPageModel, updatedCmd ) =
                     Login.update subMsg pageModel
             in
-            ( LoginPage updatedPageModel.session updatedPageModel
+            ( Model updatedPageModel.session (LoginPage updatedPageModel)
             , Cmd.map GotLoginMsg updatedCmd
             )
 
@@ -115,7 +103,7 @@ handleLoginMsg subMsg model =
 view : Model -> Document Msg
 view model =
     { title = "Jilo"
-    , body = [ appHeader (toSession model), viewer model ]
+    , body = [ appHeader model.session, viewer model ]
     }
 
 
@@ -134,11 +122,11 @@ appHeader session =
 
 viewer : Model -> Html Msg
 viewer model =
-    case model of
-        NotFoundPage _ ->
+    case model.page of
+        NotFoundPage ->
             NotFound.view
 
-        LoginPage _ pageModel ->
+        LoginPage pageModel ->
             Login.view pageModel
                 |> Html.map GotLoginMsg
 
