@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "description": "jilo spa",
   "scripts": {
-    "build": "elm make src/Main.elm --output=public/assets/main.js",
+    "dev": "npm run dev:elm && npm run build:css",
+    "dev:elm": "elm make src/Main.elm --output=public/assets/main.js",
+    "build": "npm run build:elm && npm run build:uglify && npm run build:css",
+    "build:elm": "elm make src/Main.elm --optimize --output=public/assets/main.js",
+    "build:uglify": "uglifyjs public/assets/main.js --compress 'pure_funcs=[F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9],pure_getters,keep_fargs=false,unsafe_comps,unsafe' | uglifyjs --mangle --output public/assets/main.min.js",
+    "build:css": "sass sass/index.scss public/assets/main.css",
     "elm": "elm"
   },
   "keywords": [
@@ -16,6 +21,8 @@
   "devDependencies": {
     "elm": "^0.19.1-5",
     "elm-format": "^0.8.5",
-    "elm-test": "^0.19.1-revision7"
+    "elm-test": "^0.19.1-revision7",
+    "sass": "^1.51.0",
+    "uglify-js": "^3.15.5"
   }
 }
