@@ -1,9 +1,9 @@
-module Pages.Login exposing (..)
+module Pages.Dashboard exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
-import Session exposing (Session)
+import Session exposing (..)
 
 
 type Msg
@@ -18,8 +18,8 @@ type alias Model =
 
 
 init : String -> Session -> ( Model, Cmd Msg )
-init name session =
-    ( Model session name, Cmd.none )
+init session name =
+    ( Model name session, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
