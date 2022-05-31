@@ -48,7 +48,7 @@ intoPage url model =
 
         Dashboard ->
             withSession model
-                |> Dashboard.init "Dashboard"
+                |> Dashboard.init
                 |> updateWith DashboardPage GotDashboardMsg
 
         NotFound ->
@@ -130,6 +130,7 @@ appHeader model =
             [ ul []
                 [ li [] [ a [ href "/" ] [ text "home" ] ]
                 , li [] [ a [ href "/login" ] [ text "login" ] ]
+                , li [] [ a [ href "/test" ] [ text "test" ] ]
                 , li [] [ a [ href "/user" ] [ text session.user ] ]
                 ]
             ]

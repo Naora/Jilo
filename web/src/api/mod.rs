@@ -12,7 +12,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     let site = SiteBuilder::new()
         .add_tera_renderer()
         .unwrap()
-        .add_yaml_storage("./core/tests/test_site/data")
+        .add_yaml_storage("./core/tests/test_site/yaml_storage.yml")
         .unwrap()
         .add_theme("./core/tests/test_site/theme")
         .unwrap()

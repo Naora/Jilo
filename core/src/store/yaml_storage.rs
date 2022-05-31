@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, fs, path};
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -13,28 +9,65 @@ use crate::{
     store::Store,
 };
 
-#[derive(Debug, Deserialize, Serialize)]
+/// YamlStorage is able to save and load a yaml file as a storage
+#[derive(Debug)]
 pub struct YamlStorage {
-    folder: PathBuf,
-    pages: HashMap<String, String>,
+    yaml_file: path::PathBuf,
+    storage: YamlFile,
+}
+
+impl TryFrom<&str> for YamlStorage {
+    type Error = Error;
+
+    fn try_from(value: &str) -> Result<Self> {
+        let file = fs::File::open(value)?;
+        let storage = serde_yaml::from_reader(file)?;
+        Ok(Self {
+            yaml_file: path::PathBuf::from(value),
+            storage,
+        })
+    }
 }
 
 impl YamlStorage {
-    pub fn new(folder: PathBuf) -> Self {
-        Self {
-            folder: folder,
-            pages: HashMap::new(),
-        }
+    fn persist_storage(&self) -> Result<()> {
+        let writer = fs::File::open(&self.yaml_file)?;
+        Ok(serde_yaml::to_writer(writer, &self.storage)?)
+    }
+}
+
+impl Store for YamlStorage {
+    fn summary(&self) -> Vec<String> {
+        self.storage.summary()
     }
 
-    pub fn from_file<P>(storage_file: P) -> Result<YamlStorage>
-    where
-        P: AsRef<Path>,
-    {
-        let file = fs::File::open(storage_file)?;
-        Ok(serde_yaml::from_reader(file)?)
+    fn get_pages(&self) -> Result<HashMap<String, Module>> {
+        self.storage.get_pages()
     }
 
+    fn get_page_by_name(&self, name: &String) -> Result<Module> {
+        self.storage.get_page_by_name(name)
+    }
+
+    fn create_page(&mut self, name: &str, module: Module) -> Result<()> {
+        self.storage.create_page(name, module)?;
+        self.persist_storage()
+    }
+
+    fn delete_page(&mut self, name: &str) -> Result<Module> {
+        let module = self.storage.delete_page(name)?;
+        self.persist_storage()?;
+        Ok(module)
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct YamlFile {
+    folder: path::PathBuf,
+    pages: HashMap<String, String>,
+}
+
+impl YamlFile {
     fn get_uid<T>(&self, generator: &mut T) -> String
     where
         T: IdGenerator,
@@ -47,12 +80,12 @@ impl YamlStorage {
         }
     }
 
-    fn get_file(&self, id: &str) -> PathBuf {
+    fn get_file(&self, id: &str) -> path::PathBuf {
         self.folder.join(format!("{}.yml", &id))
     }
 }
 
-impl Store for YamlStorage {
+impl Store for YamlFile {
     fn summary(&self) -> Vec<String> {
         self.pages
             .iter()
@@ -134,7 +167,10 @@ mod tests {
 
         #[test]
         fn generate_ids() {
-            let mut storage = YamlStorage::new("/home".into());
+            let mut storage = YamlFile {
+                folder: "/home".into(),
+                pages: HashMap::new(),
+            };
             let mut generator = SimpleId { count: 0 };
             let id = storage.get_uid(&mut generator);
 

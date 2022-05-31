@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::Result,
     renderer::{tera_renderer::TeraRenderer, Render},
-    store::{yaml_store::YamlStorage, Store},
+    store::{yaml_storage::YamlStorage, Store},
     theme::Theme,
 };
 
@@ -95,7 +95,7 @@ impl SiteBuilder {
     }
 
     pub fn add_yaml_storage(mut self, path: &str) -> Result<Self> {
-        let storage = YamlStorage::new(path.into());
+        let storage = YamlStorage::try_from(path)?;
         self.storage = Some(Arc::new(Mutex::new(storage)));
         Ok(self)
     }

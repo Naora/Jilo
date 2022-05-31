@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt};
 
 use crate::{error::Result, module::Module};
 
-pub mod yaml_store;
+pub mod yaml_storage;
 
 pub trait Store: fmt::Debug {
     fn summary(&self) -> Vec<String>;
