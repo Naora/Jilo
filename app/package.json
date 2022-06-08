@@ -9,7 +9,8 @@
     "build:elm": "elm make src/Main.elm --optimize --output=public/assets/main.js",
     "build:uglify": "uglifyjs public/assets/main.js --compress 'pure_funcs=[F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9],pure_getters,keep_fargs=false,unsafe_comps,unsafe' | uglifyjs --mangle --output public/assets/main.min.js",
     "build:css": "sass sass/index.scss public/assets/main.css",
-    "elm": "elm"
+    "elm": "elm",
+    "format": "elm-format src/ --yes"
   },
   "keywords": [
     "elm",
