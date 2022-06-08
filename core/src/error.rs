@@ -12,19 +12,21 @@ pub enum Error {
     ParseTheme,
     PageNotFound,
     TemplateNotFound,
+    DuplicatedName,
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Error::EmptySummary => write!(f, "no page found"),
-            Error::Io(..) => write!(f, "the file could not be open"),
+            Error::Io(ref error) => write!(f, "io error: {}", error),
             Error::InvalidValue => write!(f, "value could not be determined"),
-            Error::Serde(..) => write!(f, "a serde error occured"),
+            Error::Serde(ref error) => write!(f, "serde error: {}", error),
             Error::Tera(..) => write!(f, "a tera error occured"),
             Error::ParseTheme => write!(f, "theme is not able to be parsed"),
             Error::PageNotFound => write!(f, "page is not in store"),
             Error::TemplateNotFound => write!(f, "template not found in theme"),
+            Error::DuplicatedName => write!(f, "name already exist"),
         }
     }
 }

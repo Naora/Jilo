@@ -22,6 +22,6 @@ run: dev public
 watch:
 	while true; do \
 		make run & echo $$! > $(TMP_SERVER_PID); \
-		inotifywait -qre close_write web/src app/src app/sass; \
+		inotifywait -qre close_write core/src web/src app/src app/sass; \
 		kill `cat $(TMP_SERVER_PID)`; \
 	done

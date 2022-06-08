@@ -6,9 +6,9 @@ use actix_web::{get, middleware::Logger, App, HttpServer, Responder};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    // log::info!("starting HTTP server at http://localhost:8080");
+    log::info!("starting HTTP server at http://localhost:8080");
 
     HttpServer::new(|| {
         let public_scope = Files::new("/assets", "public/assets/");

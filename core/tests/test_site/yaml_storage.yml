@@ -1,5 +1,6 @@
-folder: data/
+---
+folder: core/tests/test_site/data/
 pages:
+  second article: second_article
   first article: first_article
   first section: first_section
-  second article: second_article

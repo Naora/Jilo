@@ -5,11 +5,16 @@ import Html.Attributes exposing (..)
 import Http exposing (..)
 import Session exposing (..)
 import Json.Decode as De
+import Json.Encode as En
 import Router exposing (Route(..))
+import Html.Events exposing (onClick)
+import Debug exposing (toString)
 
 
 type Msg
     = GotPages (Result Http.Error (Response Overview))
+    | CreateButtonClicked
+    | CreatePage (Result Http.Error (Response String)) 
 
 type alias Response data = 
     { data: Maybe data
@@ -33,14 +38,11 @@ type alias Model =
 init : Session -> ( Model, Cmd Msg )
 init session =
     ( Model session Loading
-    , Http.get
-        { url = "/api/pages"
-        , expect = Http.expectJson GotPages (responseDecoder overviewDecoder)
-        }
+    , loadPages
     )
 
 
-update : Msg -> Model -> ( Model, Cmd msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GotPages result ->
@@ -50,7 +52,19 @@ update msg model =
 
                 Err err ->
                     ( { model | state = Failure err }, Cmd.none )
+        
+        CreateButtonClicked ->
+                    ({model | state = Loading}, createPage)
 
+        CreatePage result ->
+            case result of
+                Ok _ ->
+                    (model, loadPages)
+
+                Err err ->
+                    ({model | state = Failure err}, Cmd.none)
+
+-- Views
 
 view : Model -> Html Msg
 view model =
@@ -72,15 +86,18 @@ loadingView =
         ]
 
 
-successView : Response Overview -> Html msg
+successView : Response Overview -> Html Msg
 successView overview =
     case overview.data of
         Just data ->
-            div [] (List.map pageView data)
+            div [] (addPageForm :: (List.map pageView data))
         
         Nothing ->
             div [] [text "No page yet"]
 
+
+addPageForm : Html Msg
+addPageForm = button [onClick CreateButtonClicked] [text "Create Page"] 
 
 pageView : String -> Html msg
 pageView page =
@@ -91,19 +108,35 @@ failureView : Http.Error -> Html msg
 failureView error =
     case error of
         BadUrl url ->
-            div[] [text ("Wrong Url " ++ url)]
+            div[] [text ("Bad Url " ++ url)]
 
         Timeout ->
-            div[] [text ("Wrong Url ")]
+            div[] [text ("We waited for ages")]
 
         NetworkError ->
-            div[] [text ("Wrong Url ")]
+            div[] [text ("Oups no network")]
 
-        BadStatus _ ->
-            div[] [text ("Wrong Url ")]
+        BadStatus status ->
+            div[] [text ("Bad status " ++ toString status)]
 
         BadBody body ->
             div[] [text ("Bad Body : " ++ body)]
+
+-- API
+
+loadPages : Cmd Msg
+loadPages = Http.get
+        { url = "/api/v1/pages"
+        , expect = Http.expectJson GotPages (responseDecoder overviewDecoder)
+        }
+
+createPage : Cmd Msg
+createPage = Http.post 
+    {
+        url = "/api/v1/pages",
+        body = Http.jsonBody (pageCreateEncoder "test" "/pages/article"),
+        expect = Http.expectJson CreatePage (responseDecoder De.string)
+    }
 
 
 -- Json
@@ -115,3 +148,10 @@ responseDecoder dataDecoder = De.map2 Response
 
 overviewDecoder : De.Decoder Overview
 overviewDecoder = De.list De.string
+
+pageCreateEncoder : String -> String -> En.Value
+pageCreateEncoder name template = 
+    En.object [
+        ("name", En.string name),
+        ("template", En.string template)
+    ]

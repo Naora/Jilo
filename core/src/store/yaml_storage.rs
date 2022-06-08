@@ -31,7 +31,7 @@ impl TryFrom<&str> for YamlStorage {
 
 impl YamlStorage {
     fn persist_storage(&self) -> Result<()> {
-        let writer = fs::File::open(&self.yaml_file)?;
+        let writer = fs::File::options().write(true).open(&self.yaml_file)?;
         Ok(serde_yaml::to_writer(writer, &self.storage)?)
     }
 }
@@ -49,9 +49,10 @@ impl Store for YamlStorage {
         self.storage.get_page_by_name(name)
     }
 
-    fn create_page(&mut self, name: &str, module: Module) -> Result<()> {
-        self.storage.create_page(name, module)?;
-        self.persist_storage()
+    fn create_page(&mut self, name: &str, module: Module) -> Result<String> {
+        let id = self.storage.create_page(name, module)?;
+        self.persist_storage()?;
+        Ok(id)
     }
 
     fn delete_page(&mut self, name: &str) -> Result<Module> {
@@ -110,12 +111,16 @@ impl Store for YamlFile {
         Ok(serde_yaml::from_reader(file)?)
     }
 
-    fn create_page(&mut self, name: &str, module: Module) -> Result<()> {
+    fn create_page(&mut self, name: &str, module: Module) -> Result<String> {
+        if self.pages.contains_key(name) {
+            return Err(Error::DuplicatedName);
+        }
+
         let id = self.get_uid(&mut Random::default());
         let file = fs::File::create(self.get_file(&id))?;
         serde_yaml::to_writer(file, &module)?;
-        self.pages.insert(name.to_owned(), id);
-        Ok(())
+        self.pages.insert(name.to_owned(), id.to_owned());
+        Ok(id)
     }
 
     fn delete_page(&mut self, name: &str) -> Result<Module> {

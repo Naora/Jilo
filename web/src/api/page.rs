@@ -21,10 +21,13 @@ async fn get_pages_options() -> HttpResponse {
     HttpResponse::Ok().json("response")
 }
 
-async fn create_page(form: web::Form<PageData>, state: web::Data<AppState>) -> HttpResponse {
+async fn create_page(form: web::Json<PageData>, state: web::Data<AppState>) -> HttpResponse {
     match state.site.create_page(&form.name, &form.template) {
-        Ok(..) => HttpResponse::Created().finish(),
-        Err(error) => HttpResponse::InternalServerError().json(error.to_string()),
+        Ok(id) => HttpResponse::Created().json(Response::success(id)),
+        Err(error) => match error {
+            core::Error::DuplicatedName => HttpResponse::BadRequest().json(error.to_string()),
+            _ => HttpResponse::InternalServerError().json(error.to_string()),
+        },
     }
 }
 

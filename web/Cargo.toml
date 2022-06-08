@@ -10,3 +10,5 @@ actix-web = "4"
 actix-files = "0.6"
 serde = "1"
 core = {path = "../core"}
+env_logger = "0.9"
+log = "0.4"

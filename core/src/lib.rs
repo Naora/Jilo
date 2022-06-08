@@ -19,6 +19,8 @@ use crate::{
     theme::Theme,
 };
 
+pub use crate::error::Error;
+
 #[derive(Debug)]
 pub struct Site {
     theme: Theme,
@@ -39,7 +41,7 @@ impl Site {
         }
     }
 
-    pub fn create_page(&self, name: &str, template: &str) -> Result<()> {
+    pub fn create_page(&self, name: &str, template: &str) -> Result<String> {
         let module = self.theme.get_module_defaults(template)?;
         let mut storage_lock = self.storage.lock().unwrap();
         Ok(storage_lock.create_page(name, module)?)
