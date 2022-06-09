@@ -3,7 +3,7 @@ module Pages.Dashboard exposing (..)
 import Debug exposing (toString)
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onInput, onSubmit)
 import Http exposing (..)
 import Json.Decode as De
 import Json.Encode as En
@@ -13,8 +13,9 @@ import Session exposing (..)
 
 type Msg
     = GotPages (Result Http.Error (Response Overview))
-    | CreateButtonClicked
-    | CreatePage (Result Http.Error (Response String))
+    | GotNewPage (Result Http.Error (Response String))
+    | SubmitForm
+    | ChangePageName String
 
 
 type alias Response data =
@@ -36,12 +37,13 @@ type PageState
 type alias Model =
     { session : Session
     , state : PageState
+    , newPageName : String
     }
 
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    ( Model session Loading
+    ( Model session Loading ""
     , loadPages
     )
 
@@ -57,10 +59,13 @@ update msg model =
                 Err err ->
                     ( { model | state = Failure err }, Cmd.none )
 
-        CreateButtonClicked ->
-            ( { model | state = Loading }, createPage )
+        SubmitForm ->
+            ( { model | state = Loading }, createPage model )
 
-        CreatePage result ->
+        ChangePageName newName ->
+            ( { model | newPageName = newName }, Cmd.none )
+
+        GotNewPage result ->
             case result of
                 Ok _ ->
                     ( model, loadPages )
@@ -78,40 +83,40 @@ view model =
     case model.state of
         Loading ->
             loadingView
-                |> withLayout
 
         Success overview ->
             successView overview
-                |> withLayout
 
         Failure error ->
             failureView error
-                |> withLayout
 
 
-withLayout : List (Html msg) -> Html msg
-withLayout children =
-    div [] children
-
-
-loadingView : List (Html msg)
+loadingView : Html msg
 loadingView =
-    [ div [] [ text "Loading" ] ]
+    div [] [ text "Loading" ]
 
 
-successView : Response Overview -> List (Html Msg)
+successView : Response Overview -> Html Msg
 successView overview =
     case overview.data of
         Just data ->
-            [ div [] (addPageForm :: List.map pageView data) ]
+            div [] (addPageForm :: List.map pageView data)
 
         Nothing ->
-            [ div [] [ text "No page yet" ] ]
+            div [] [ text "No page yet" ]
 
 
 addPageForm : Html Msg
 addPageForm =
-    button [ onClick CreateButtonClicked ] [ text "Create Page" ]
+    Html.form [ onSubmit SubmitForm ]
+        [ label [] [ text "Page name" ]
+        , input
+            [ placeholder "new page name"
+            , type_ "text"
+            , onInput ChangePageName
+            ]
+            []
+        ]
 
 
 pageView : String -> Html msg
@@ -119,27 +124,23 @@ pageView page =
     div [] [ text page ]
 
 
-failureView : Http.Error -> List (Html msg)
+failureView : Http.Error -> Html msg
 failureView error =
-    let
-        display =
-            case error of
-                BadUrl url ->
-                    div [] [ text ("Bad Url " ++ url) ]
+    case error of
+        BadUrl url ->
+            div [] [ text ("Bad Url " ++ url) ]
 
-                Timeout ->
-                    div [] [ text "We waited for ages" ]
+        Timeout ->
+            div [] [ text "We waited for ages" ]
 
-                NetworkError ->
-                    div [] [ text "Oups no network" ]
+        NetworkError ->
+            div [] [ text "Oups no network" ]
 
-                BadStatus status ->
-                    div [] [ text ("Bad status " ++ toString status) ]
+        BadStatus status ->
+            div [] [ text ("Bad status " ++ toString status) ]
 
-                BadBody body ->
-                    div [] [ text ("Bad Body : " ++ body) ]
-    in
-    [ display ]
+        BadBody body ->
+            div [] [ text ("Bad Body : " ++ body) ]
 
 
 
@@ -154,12 +155,12 @@ loadPages =
         }
 
 
-createPage : Cmd Msg
-createPage =
+createPage : Model -> Cmd Msg
+createPage model =
     Http.post
         { url = "/api/v1/pages"
-        , body = Http.jsonBody (pageCreateEncoder "test" "/pages/article")
-        , expect = Http.expectJson CreatePage (responseDecoder De.string)
+        , body = Http.jsonBody (pageCreateEncoder model.newPageName "/pages/article")
+        , expect = Http.expectJson GotNewPage (responseDecoder De.string)
         }
 
 
