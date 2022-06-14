@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::theme::Field;
+use serde_yaml::{Number, Value};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Module {
@@ -21,19 +22,12 @@ impl Module {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub enum Value {
-    String(String),
-    Number(usize),
-    Boolean(bool),
-}
-
 impl From<&Field> for Value {
     fn from(field: &Field) -> Self {
         match *field {
             Field::String => Self::String(String::default()),
-            Field::Number => Self::Number(usize::default()),
-            Field::Boolean => Self::Boolean(bool::default()),
+            Field::Number => Self::Number(Number::from(usize::default())),
+            Field::Boolean => Self::Bool(false),
         }
     }
 }

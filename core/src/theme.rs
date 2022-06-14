@@ -7,6 +7,15 @@ use crate::{
     module::Module,
 };
 
+#[derive(Debug, Deserialize)]
+pub struct Template {
+    pub view: PathBuf,
+    #[serde(default)]
+    pub fields: HashMap<String, Field>,
+    #[serde(default)]
+    pub areas: HashMap<String, Area>,
+}
+
 impl From<&PathBuf> for Template {
     fn from(path_buf: &PathBuf) -> Self {
         let content = fs::read(&path_buf).unwrap();
@@ -32,15 +41,6 @@ impl From<Vec<u8>> for Template {
     fn from(slice: Vec<u8>) -> Self {
         serde_yaml::from_slice(&slice).unwrap()
     }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct Template {
-    pub view: PathBuf,
-    #[serde(default)]
-    pub fields: HashMap<String, Field>,
-    #[serde(default)]
-    pub areas: HashMap<String, Area>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

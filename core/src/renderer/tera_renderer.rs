@@ -1,13 +1,9 @@
 use std::collections::HashMap;
 
+use serde_yaml::Value;
 use tera::{self, Context};
 
-use crate::{
-    error::Result,
-    module::{Module, Value},
-    renderer::Render,
-    theme::Theme,
-};
+use crate::{error::Result, module::Module, renderer::Render, theme::Theme};
 
 #[derive(Debug)]
 pub struct TeraRenderer {
@@ -22,7 +18,10 @@ impl From<&Module> for tera::Context {
             match value {
                 Value::String(val) => context.insert(name, val),
                 Value::Number(val) => context.insert(name, val),
-                Value::Boolean(val) => context.insert(name, val),
+                Value::Bool(val) => context.insert(name, val),
+                Value::Null => context.insert(name, &tera::Value::Null),
+                Value::Sequence(val) => context.insert(name, val),
+                Value::Mapping(val) => context.insert(name, val),
             };
         }
         context

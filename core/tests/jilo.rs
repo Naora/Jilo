@@ -5,17 +5,17 @@ fn create_page() {
     let mut site = SiteBuilder::new()
         .add_tera_renderer()
         .unwrap()
-        .add_yaml_storage("./tests/test_site/data")
+        .add_yaml_storage("./tests/test_site/yaml_storage.yml")
         .unwrap()
         .add_theme("./tests/test_site/theme")
         .unwrap()
         .build();
 
-    site.create_page("first section", "/pages/section").unwrap();
+    let id = site.create_page("first test", "/pages/section").unwrap();
     let summary = site.summary();
 
     assert_eq!(summary.len(), 1);
-    assert_eq!(&summary[0], "first section");
+    // assert_eq!(summary.get(&id).unwrap(), "first test");
 
-    site.delete_page("first section").unwrap();
+    site.delete_page(&id).unwrap();
 }

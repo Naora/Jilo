@@ -2,7 +2,9 @@ mod api;
 mod utils;
 
 use actix_files::{Files, NamedFile};
-use actix_web::{get, middleware::Logger, App, HttpServer, Responder};
+use actix_web::{get, middleware::Logger, web, App, HttpServer, Responder};
+
+use core::SiteBuilder;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -10,10 +12,22 @@ async fn main() -> std::io::Result<()> {
 
     log::info!("starting HTTP server at http://localhost:8080");
 
-    HttpServer::new(|| {
+    let site = SiteBuilder::new()
+        .add_tera_renderer()
+        .unwrap()
+        .add_yaml_storage("./core/tests/test_site/yaml_storage.yml")
+        .unwrap()
+        .add_theme("./core/tests/test_site/theme")
+        .unwrap()
+        .build();
+
+    let data = web::Data::new(site);
+
+    HttpServer::new(move || {
         let public_scope = Files::new("/assets", "public/assets/");
 
         App::new()
+            .app_data(data.clone())
             .configure(api::config)
             .service(public_scope)
             .service(index)

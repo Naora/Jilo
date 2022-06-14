@@ -9,11 +9,13 @@ use crate::{
     store::Store,
 };
 
+use super::Page;
+
 /// YamlStorage is able to save and load a yaml file as a storage
 #[derive(Debug)]
 pub struct YamlStorage {
     yaml_file: path::PathBuf,
-    storage: YamlFile,
+    storage: YamlStorageFile,
 }
 
 impl TryFrom<&str> for YamlStorage {
@@ -37,7 +39,7 @@ impl YamlStorage {
 }
 
 impl Store for YamlStorage {
-    fn summary(&self) -> Vec<String> {
+    fn summary(&self) -> Vec<Page> {
         self.storage.summary()
     }
 
@@ -55,49 +57,60 @@ impl Store for YamlStorage {
         Ok(id)
     }
 
-    fn delete_page(&mut self, name: &str) -> Result<Module> {
-        let module = self.storage.delete_page(name)?;
+    fn delete_page(&mut self, id: &str) -> Result<Module> {
+        let module = self.storage.delete_page(id)?;
         self.persist_storage()?;
         Ok(module)
     }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct YamlFile {
+struct YamlStorageFile {
     folder: path::PathBuf,
     pages: HashMap<String, String>,
 }
 
-impl YamlFile {
+impl YamlStorageFile {
     fn get_uid<T>(&self, generator: &mut T) -> String
     where
         T: IdGenerator,
     {
         let new_id = generator.generate_id();
 
-        match self.pages.iter().find(|(_, value)| *value == &new_id) {
-            Some(..) => generator.generate_id(),
-            None => new_id,
+        if self.pages.contains_key(&new_id) {
+            return generator.generate_id();
         }
+
+        new_id
     }
 
     fn get_file(&self, id: &str) -> path::PathBuf {
         self.folder.join(format!("{}.yml", &id))
     }
+
+    fn contains_name(&self, page_name: &str) -> Option<(&String, &String)> {
+        self.pages.iter().find(|p| p.1 == page_name)
+    }
 }
 
-impl Store for YamlFile {
-    fn summary(&self) -> Vec<String> {
-        self.pages
-            .iter()
-            .map(|(name, ..)| name.to_owned())
-            .collect()
+impl From<(&String, &String)> for Page {
+    fn from(page: (&String, &String)) -> Self {
+        Self {
+            id: page.0.to_owned(),
+            name: page.1.to_owned(),
+        }
+    }
+}
+
+impl Store for YamlStorageFile {
+    fn summary(&self) -> Vec<Page> {
+        self.pages.iter().map(|p| p.into()).collect()
     }
 
     fn get_pages(&self) -> Result<HashMap<String, Module>> {
         let mut pages = HashMap::new();
-        for (name, file_name) in &self.pages {
-            let file = fs::File::open(self.folder.join(file_name))?;
+        for (id, name) in &self.pages {
+            let file = fs::File::open(self.folder.join(id))?;
             let template: Module = serde_yaml::from_reader(file)?;
             pages.insert(name.to_owned(), template);
         }
@@ -106,34 +119,38 @@ impl Store for YamlFile {
     }
 
     fn get_page_by_name(&self, name: &String) -> Result<Module> {
-        let id = self.pages.get(name).ok_or(Error::PageNotFound)?;
-        let file = fs::File::open(self.get_file(&id))?;
-        Ok(serde_yaml::from_reader(file)?)
+        if let Some(page) = self.contains_name(name) {
+            let file = fs::File::open(self.get_file(&page.0))?;
+            Ok(serde_yaml::from_reader(file)?)
+        } else {
+            Err(Error::PageNotFound)
+        }
     }
 
     fn create_page(&mut self, name: &str, module: Module) -> Result<String> {
-        if self.pages.contains_key(name) {
+        if self.contains_name(name).is_some() {
             return Err(Error::DuplicatedName);
         }
 
         let id = self.get_uid(&mut Random::default());
         let file = fs::File::create(self.get_file(&id))?;
         serde_yaml::to_writer(file, &module)?;
-        self.pages.insert(name.to_owned(), id.to_owned());
+        self.pages.insert(id.to_owned(), name.to_owned());
         Ok(id)
     }
 
-    fn delete_page(&mut self, name: &str) -> Result<Module> {
-        if let Some(id) = self.pages.get(name) {
-            let path = self.get_file(id);
-            let file = fs::File::open(&path)?;
-            let module = serde_yaml::from_reader(file)?;
-            fs::remove_file(path)?;
-
-            return Ok(module);
-        } else {
-            Err(Error::PageNotFound)
+    fn delete_page(&mut self, id: &str) -> Result<Module> {
+        if !self.pages.contains_key(id) {
+            return Err(Error::PageNotFound);
         }
+
+        let path = self.get_file(id);
+        let file = fs::File::open(&path)?;
+        let module = serde_yaml::from_reader(file)?;
+        fs::remove_file(path)?;
+        self.pages.remove(id);
+
+        Ok(module)
     }
 }
 
@@ -172,7 +189,7 @@ mod tests {
 
         #[test]
         fn generate_ids() {
-            let mut storage = YamlFile {
+            let mut storage = YamlStorageFile {
                 folder: "/home".into(),
                 pages: HashMap::new(),
             };
@@ -181,7 +198,7 @@ mod tests {
 
             assert_eq!(&id, "1");
 
-            storage.pages.insert("first".to_string(), id);
+            storage.pages.insert(id, "first".to_string());
             generator.count = 0;
 
             let id = storage.get_uid(&mut generator);

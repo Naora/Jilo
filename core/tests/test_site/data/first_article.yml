@@ -1,4 +1,0 @@
-name: "first article"
-template: "/pages/article"
-fields:
-  title: "A Jilo Title"

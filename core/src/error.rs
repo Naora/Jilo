@@ -13,6 +13,7 @@ pub enum Error {
     PageNotFound,
     TemplateNotFound,
     DuplicatedName,
+    EmptyPageName,
 }
 
 impl fmt::Display for Error {
@@ -27,6 +28,7 @@ impl fmt::Display for Error {
             Error::PageNotFound => write!(f, "page is not in store"),
             Error::TemplateNotFound => write!(f, "template not found in theme"),
             Error::DuplicatedName => write!(f, "name already exist"),
+            Error::EmptyPageName => write!(f, "page name must be set"),
         }
     }
 }

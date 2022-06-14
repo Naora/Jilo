@@ -11,6 +11,7 @@ use std::{
 
 use module::Module;
 use serde::{Deserialize, Serialize};
+use store::Page;
 
 use crate::{
     error::Result,
@@ -42,17 +43,21 @@ impl Site {
     }
 
     pub fn create_page(&self, name: &str, template: &str) -> Result<String> {
+        let name = name.trim();
+        if name.is_empty() {
+            return Err(Error::EmptyPageName);
+        }
         let module = self.theme.get_module_defaults(template)?;
         let mut storage_lock = self.storage.lock().unwrap();
-        Ok(storage_lock.create_page(name, module)?)
+        storage_lock.create_page(name, module)
     }
 
-    pub fn delete_page(&self, name: &str) -> Result<Module> {
+    pub fn delete_page(&self, id: &str) -> Result<Module> {
         let mut storage_lock = self.storage.lock().unwrap();
-        storage_lock.delete_page(name)
+        storage_lock.delete_page(id)
     }
 
-    pub fn summary(&self) -> Vec<String> {
+    pub fn summary(&self) -> Vec<Page> {
         let storage_lock = self.storage.lock().unwrap();
         storage_lock.summary()
     }
