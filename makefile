@@ -1,27 +1,16 @@
 TMP_SERVER_PID=/tmp/jilo-dev-server.pid
 
-.PHONY: build, dev, run, watch, install
-
-install:
-	sudo apt install inotify-tools
+.PHONY: build, front, back, dev
 
 build: 
 	cd app && npm run build
 	cargo build --release
 
-dev: | public
+front:
 	cd app && npm run dev
-	cargo build
 
-public:
-	ln -s app/public .
+back:	
+	cargo watch
 
-run: dev public
-	cargo run
-
-watch:
-	while true; do \
-		make run & echo $$! > $(TMP_SERVER_PID); \
-		inotifywait -qre close_write core/src web/src app/src app/sass; \
-		kill `cat $(TMP_SERVER_PID)`; \
-	done
+dev:
+	make -j 2 back front

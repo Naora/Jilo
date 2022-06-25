@@ -6,7 +6,7 @@ use crate::{error::Result, module::Module};
 
 pub mod yaml_storage;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Page {
     pub id: String,
     pub name: String,

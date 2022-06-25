@@ -1,7 +1,5 @@
 ---
 folder: core/tests/test_site/data/
-pages: {}
-6sBl1DZXgR0dDwKyioQr1bzvAnJGN: test
- 98mEgtdw9fJsNL0mn0ccLwcGLs0BR0: "1"
-  98mEgtdw9fJsNL0mn0ccLwcGLs0BR0: "1"
-  98mEgtdw9fJsNL0mn0ccLwcGLs0BR0: "1"
+pages:
+  mSR1vIsCl6R4hLNpmuRo2phY9ukN6Y: bla
+  q3Ovbe13a27DCCqRABVCL0eb6C6M0V: test

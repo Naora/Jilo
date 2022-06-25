@@ -26,9 +26,10 @@ L'utilisateur lui peu ajouter ce module a des pages.
 
 Rust est un langage performant et qui laisse peu de marge d'erreur. Donc idéal pour un serveur web. Cela permettra de l'installer même sur un raspberry pi.
 
-## Front (ELM)
+## Front (Lit)
 
-On va mettre en place de l'elm pour la partie SPA car ça syntaxe et ça gestion des erreurs est bien plus puissante que javascript avec du React ou du Vue. De plus la partie front ne devrait pas etre trop compliqué a gérer.
+On va utilisez du lit.dev pour la partie PWA. A voir si on fait a terme une SPA.
+Avant j'ai essayer ELM. Très sympas a utiliser mais trop complexe aux globale.
 
 ## Orchestrateur de creation (Make)
 

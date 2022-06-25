@@ -1,12 +1,12 @@
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub(crate) struct Link {
     pub(crate) rel: String,
     pub(crate) href: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub(crate) struct Response<T>
 where
     T: Serialize,
