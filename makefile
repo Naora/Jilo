@@ -10,7 +10,7 @@ front:
 	cd app && npm run dev
 
 back:	
-	cargo watch
+	cargo watch -x run
 
 dev:
 	make -j 2 back front

@@ -3,8 +3,6 @@ use core::Site;
 use actix_web::{http::Method, web, HttpResponse};
 use serde::Deserialize;
 
-use crate::utils::Response;
-
 #[derive(Debug, Deserialize)]
 struct PageData {
     name: String,
@@ -13,8 +11,7 @@ struct PageData {
 
 async fn show_all_pages(site: web::Data<Site>) -> HttpResponse {
     let summary = site.summary();
-    let response = Response::success(summary);
-    HttpResponse::Ok().json(response)
+    HttpResponse::Ok().json(summary)
 }
 
 async fn get_pages_options() -> HttpResponse {
@@ -23,7 +20,7 @@ async fn get_pages_options() -> HttpResponse {
 
 async fn create_page(form: web::Json<PageData>, site: web::Data<Site>) -> HttpResponse {
     match site.create_page(&form.name, &form.template) {
-        Ok(id) => HttpResponse::Created().json(Response::success(id)),
+        Ok(id) => HttpResponse::Created().json(id),
         Err(error) => match error {
             core::Error::DuplicatedName | core::Error::EmptyPageName => {
                 HttpResponse::BadRequest().json(error.to_string())

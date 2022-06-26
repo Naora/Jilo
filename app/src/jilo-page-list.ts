@@ -22,6 +22,7 @@ export class JiloPageList extends LitElement {
 
   @state() pages: Pages[] = [];
   @state() isLoading: boolean = true;
+  @state() newPageName: string = "";
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -30,10 +31,34 @@ export class JiloPageList extends LitElement {
   }
 
   async fetchAllPages() {
-    const response = await fetch("/api/v1/pages");
-    const json = await response.json();
-    this.pages = json.data;
-    this.isLoading = false;
+    try {
+      const response = await fetch("/api/v1/pages");
+      const json = await response.json();
+      this.pages = json;
+      this.isLoading = false;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  private async _onDelete(event: MouseEvent) {
+    const id = (event.target as Element).getAttribute("data-page")
+    await fetch(`/api/v1/pages/${id}`, {method: "DELETE"})
+    await this.fetchAllPages()
+  }
+
+  private async _onCreate() {
+    const body = JSON.stringify({name: this.newPageName, template: "/pages/article"})
+    const headers = new Headers()
+    headers.append("content-type", "text/json")
+    await fetch(`/api/v1/pages`, {method: "POST", body, headers})
+    this.newPageName = "";
+    await this.fetchAllPages()
+  }
+
+
+  private _onInput(event: InputEvent) {
+    this.newPageName = (event.target as HTMLInputElement).value
   }
 
   render() {
@@ -41,11 +66,13 @@ export class JiloPageList extends LitElement {
 
     const pageFetched = html`
       <div>
+        <input type="text" @input=${this._onInput} .value=${this.newPageName} />
+        <button @click=${this._onCreate}>Create</button>
         <ul>
           ${repeat(
             this.pages,
             (p) => p.id,
-            (page, _) => html` <li>${page.name}</li> `
+            (page, _) => html`<li><a href="/pages/${page.id}">${page.name}</a> <button data-page=${page.id} @click=${this._onDelete} >Delete</button></li>`
           )}
         </ul>
       </div>

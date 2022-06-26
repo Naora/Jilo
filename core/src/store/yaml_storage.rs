@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, path};
+use std::{collections::HashMap, fs, io::Write, path};
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -33,8 +33,12 @@ impl TryFrom<&str> for YamlStorage {
 
 impl YamlStorage {
     fn persist_storage(&self) -> Result<()> {
-        let writer = fs::File::options().write(true).open(&self.yaml_file)?;
-        Ok(serde_yaml::to_writer(writer, &self.storage)?)
+        let mut writer = fs::File::options()
+            .write(true)
+            .truncate(true)
+            .open(&self.yaml_file)?;
+        serde_yaml::to_writer(&writer, &self.storage)?;
+        Ok(())
     }
 }
 
@@ -47,8 +51,12 @@ impl Store for YamlStorage {
         self.storage.get_pages()
     }
 
-    fn get_page_by_name(&self, name: &String) -> Result<Module> {
+    fn get_page_by_name(&self, name: &str) -> Option<Module> {
         self.storage.get_page_by_name(name)
+    }
+
+    fn page_exists(&self, id: &str) -> bool {
+        self.storage.page_exists(id)
     }
 
     fn create_page(&mut self, name: &str, module: Module) -> Result<String> {
@@ -118,20 +126,20 @@ impl Store for YamlStorageFile {
         Ok(pages)
     }
 
-    fn get_page_by_name(&self, name: &String) -> Result<Module> {
+    fn get_page_by_name(&self, name: &str) -> Option<Module> {
         if let Some(page) = self.contains_name(name) {
-            let file = fs::File::open(self.get_file(&page.0))?;
-            Ok(serde_yaml::from_reader(file)?)
+            let file = fs::File::open(self.get_file(&page.0)).ok()?;
+            Some(serde_yaml::from_reader(file).ok()?)
         } else {
-            Err(Error::PageNotFound)
+            None
         }
     }
 
-    fn create_page(&mut self, name: &str, module: Module) -> Result<String> {
-        if self.contains_name(name).is_some() {
-            return Err(Error::DuplicatedName);
-        }
+    fn page_exists(&self, id: &str) -> bool {
+        self.pages.contains_key(id)
+    }
 
+    fn create_page(&mut self, name: &str, module: Module) -> Result<String> {
         let id = self.get_uid(&mut Random::default());
         let file = fs::File::create(self.get_file(&id))?;
         serde_yaml::to_writer(file, &module)?;
@@ -140,15 +148,12 @@ impl Store for YamlStorageFile {
     }
 
     fn delete_page(&mut self, id: &str) -> Result<Module> {
-        if !self.pages.contains_key(id) {
-            return Err(Error::PageNotFound);
-        }
-
         let path = self.get_file(id);
         let file = fs::File::open(&path)?;
         let module = serde_yaml::from_reader(file)?;
         fs::remove_file(path)?;
         self.pages.remove(id);
+        dbg!(&self.pages);
 
         Ok(module)
     }

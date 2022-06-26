@@ -49,11 +49,17 @@ impl Site {
         }
         let module = self.theme.get_module_defaults(template)?;
         let mut storage_lock = self.storage.lock().unwrap();
+        if storage_lock.get_page_by_name(name).is_some() {
+            return Err(Error::DuplicatedName);
+        }
         storage_lock.create_page(name, module)
     }
 
     pub fn delete_page(&self, id: &str) -> Result<Module> {
         let mut storage_lock = self.storage.lock().unwrap();
+        if !storage_lock.page_exists(id) {
+            return Err(Error::PageNotFound);
+        }
         storage_lock.delete_page(id)
     }
 
@@ -64,7 +70,9 @@ impl Site {
 
     pub fn render_page(&self, name: &str) -> Result<String> {
         let storage_lock = self.storage.lock().unwrap();
-        let page = storage_lock.get_page_by_name(&name.to_string())?;
+        let page = storage_lock
+            .get_page_by_name(&name.to_string())
+            .ok_or(Error::PageNotFound)?;
         let mut renderer_lock = self.renderer.lock().unwrap();
         renderer_lock.load(&self.theme)?;
 

@@ -4,7 +4,6 @@ use actix_web::{middleware::Logger, web, App, HttpServer};
 use core::SiteBuilder;
 
 mod api;
-mod utils;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
