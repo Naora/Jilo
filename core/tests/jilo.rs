@@ -2,7 +2,7 @@ use core::{self, SiteBuilder};
 
 #[test]
 fn create_page() {
-    let mut site = SiteBuilder::new()
+    let site = SiteBuilder::new()
         .add_tera_renderer()
         .unwrap()
         .add_yaml_storage("./tests/test_site/yaml_storage.yml")

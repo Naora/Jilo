@@ -71,7 +71,7 @@ impl Site {
     pub fn render_page(&self, name: &str) -> Result<String> {
         let storage_lock = self.storage.lock().unwrap();
         let page = storage_lock
-            .get_page_by_name(&name.to_string())
+            .get_page_by_name(name)
             .ok_or(Error::PageNotFound)?;
         let mut renderer_lock = self.renderer.lock().unwrap();
         renderer_lock.load(&self.theme)?;
@@ -139,5 +139,11 @@ impl SiteBuilder {
             .storage
             .expect("Could not build site because of missing storage");
         Site::new(theme, Arc::clone(&storage), Arc::clone(&renderer))
+    }
+}
+
+impl Default for SiteBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }

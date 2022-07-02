@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use serde::Deserialize;
 
@@ -66,7 +70,7 @@ pub struct Theme {
 
 impl Theme {
     // TODO: Change logic and use something else then OsStr for templates...
-    pub(crate) fn from_folder(base_path: &PathBuf) -> Result<Self> {
+    pub(crate) fn from_folder(base_path: &Path) -> Result<Self> {
         let mut templates = HashMap::new();
 
         let canonical = get_canonical(base_path)?;
@@ -113,7 +117,7 @@ impl Theme {
     }
 }
 
-fn get_canonical(path: &PathBuf) -> Result<String> {
+fn get_canonical(path: &Path) -> Result<String> {
     let canonical = path.canonicalize()?;
     let canonical = canonical.to_str().ok_or(Error::ParseTheme)?;
     Ok(canonical.to_string())

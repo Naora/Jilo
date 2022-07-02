@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, io::Write, path};
+use std::{collections::HashMap, fs, path};
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -33,7 +33,7 @@ impl TryFrom<&str> for YamlStorage {
 
 impl YamlStorage {
     fn persist_storage(&self) -> Result<()> {
-        let mut writer = fs::File::options()
+        let writer = fs::File::options()
             .write(true)
             .truncate(true)
             .open(&self.yaml_file)?;
@@ -128,7 +128,7 @@ impl Store for YamlStorageFile {
 
     fn get_page_by_name(&self, name: &str) -> Option<Module> {
         if let Some(page) = self.contains_name(name) {
-            let file = fs::File::open(self.get_file(&page.0)).ok()?;
+            let file = fs::File::open(self.get_file(page.0)).ok()?;
             Some(serde_yaml::from_reader(file).ok()?)
         } else {
             None
